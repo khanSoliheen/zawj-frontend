@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "zawj",
+    "slug": "zawj",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "zawjapp",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-splash-screen",
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

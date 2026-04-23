@@ -1,0 +1,3 @@
+pnpm exec eslint app src test --ext .js,.ts,.tsx --max-warnings=0
+pnpm exec tsc --noEmit
+pnpm exec jest --runInBand --passWithNoTests=false

@@ -1,0 +1,38 @@
+{
+  "welcome": "Welcome to Zawj",
+  "intro": "A matrimonial platform built on Islamic values.",
+  "get_started": "Get Started",
+  "find_your_life_partner": "Find Your Life Partner",
+  "how_it_works": "How It Works",
+  "button": {
+    "learn_more": "Learn More",
+    "get_started": "Get Started"
+  },
+  "login_page" : {
+    "email": "Enter Your Email",
+    "password": "Enter Your Password",
+    "register": "Register here",
+    "button" : {
+      "text": "Login"
+    }
+  },
+  "register_page": {
+    "backToLogin": "Back To Login",
+    "button": {
+      "register": "Register"
+    }
+  },
+  "settings": {
+    "language": "Language"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Choose your preferred language. The app will update immediately anywhere translations are available.",
+    "coverage_note": "Only part of the app is fully translated right now.",
+    "english": "English",
+    "arabic": "Arabic",
+    "urdu": "Urdu",
+    "selected": "Selected",
+    "updated": "Language updated"
+  }
+}

@@ -1,0 +1,13 @@
+message_file="$1"
+message="$(sed -n '1p' "$message_file" | tr -d '\r')"
+
+if [ -z "$message" ]; then
+  echo "commit message cannot be empty"
+  exit 1
+fi
+
+if [ "${#message}" -lt 8 ]; then
+  echo "commit message is too short"
+  echo "use something descriptive, for example: fix auth hydration on app boot"
+  exit 1
+fi
