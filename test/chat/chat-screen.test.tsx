@@ -12,6 +12,7 @@ const mockEnsureConnection = jest.fn();
 const mockEnsureConversation = jest.fn();
 const mockSendMessage = jest.fn();
 const mockGetUser = jest.fn();
+const mockGetBlockStatus = jest.fn();
 const mockShow = jest.fn();
 const mockTheme = {
   colors: {
@@ -19,11 +20,13 @@ const mockTheme = {
     white: '#ffffff',
     gray: '#808080',
     text: '#111111',
+    card: '#f5f5f5',
   },
   sizes: {
     s: 8,
     m: 16,
     md: 20,
+    cardRadius: 16,
   },
   assets: {
     arrow: 1,
@@ -51,6 +54,9 @@ jest.mock('@/hooks', () => ({
     currentUser: {
       id: 'me',
     },
+  }),
+  useRealtime: () => ({
+    lastEvent: null,
   }),
 }));
 
@@ -93,6 +99,13 @@ jest.mock('@/services/users', () => ({
   __esModule: true,
   default: {
     getUser: (...args: unknown[]) => mockGetUser(...args),
+  },
+}));
+
+jest.mock('@/services/settings', () => ({
+  __esModule: true,
+  default: {
+    getBlockStatus: (...args: unknown[]) => mockGetBlockStatus(...args),
   },
 }));
 
@@ -160,6 +173,7 @@ describe('Chat screen', () => {
     mockGetUser.mockResolvedValue({
       avatar_url: 'https://cdn.example.com/fallback-fatima.jpg',
     });
+    mockGetBlockStatus.mockResolvedValue({ blocked: false });
     mockUseLocalSearchParams.mockReturnValue({
       id: '11111111-1111-4111-8111-111111111111',
       name: 'Fatima',
@@ -203,7 +217,7 @@ describe('Chat screen', () => {
     expect(mockAcceptConnection).toHaveBeenCalledWith('connection-1');
     expect(mockGetConnection).toHaveBeenCalledTimes(2);
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
-    expect(mockShow).toHaveBeenCalledWith('success', 'Request accepted');
+    expect(mockShow).not.toHaveBeenCalledWith('success', 'Request accepted');
 
     unmountRenderer(renderer);
   });
@@ -224,7 +238,7 @@ describe('Chat screen', () => {
     expect(mockDeclineConnection).toHaveBeenCalledWith('connection-1');
     expect(mockGetConnection).toHaveBeenCalledTimes(2);
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
-    expect(mockShow).toHaveBeenCalledWith('info', 'Request declined');
+    expect(mockShow).not.toHaveBeenCalledWith('info', 'Request declined');
 
     unmountRenderer(renderer);
   });
@@ -260,6 +274,26 @@ describe('Chat screen', () => {
 
     const images = renderer!.root.findAll((node) => String(node.type) === 'MockImage');
     expect(images.some((node) => node.props.source?.uri === 'https://cdn.example.com/fallback-fatima.jpg')).toBe(true);
+
+    unmountRenderer(renderer);
+  });
+
+  it('shows a blocked-state banner and hides the composer when the current user blocked the peer', async () => {
+    mockGetBlockStatus.mockResolvedValue({ blocked: true });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => {});
+
+    const textContent = renderer!.root
+      .findAll((node) => String(node.type) === 'MockText')
+      .map((node) => node.children.join(' '));
+
+    expect(textContent).toContain('You blocked this user.');
+    expect(textContent).toContain('Previous messages stay visible, but you can’t send new ones.');
+    expect(renderer!.root.findAll((node) => String(node.type) === 'MockInput')).toHaveLength(0);
 
     unmountRenderer(renderer);
   });
@@ -345,10 +379,63 @@ describe('Chat screen', () => {
     const seenTimeStamps = timeStamps.filter((node) => node.props.seen === true);
     const detailTimeStamps = timeStamps.filter((node) => node.props.seen !== true);
     expect(seenTimeStamps).toHaveLength(1);
-    expect(detailTimeStamps).toHaveLength(1);
+    expect(detailTimeStamps).toHaveLength(2);
     expect(seenTimeStamps[0].props.seenAvatar?.uri).toBe('https://cdn.example.com/fatima.jpg');
-    expect(seenTimeStamps[0].props.avatarOnly).toBe(false);
-    expect(seenTimeStamps[0].props.label).toBe('Seen 3m ago');
+    expect(seenTimeStamps[0].props.avatarOnly).toBe(true);
+    expect(detailTimeStamps.map((node) => node.props.label)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Jan 10, 2026'),
+        'Seen 3m ago',
+      ]),
+    );
+
+    unmountRenderer(renderer);
+  });
+
+  it('keeps the seen avatar visible when another message is selected', async () => {
+    mockGetConnection.mockResolvedValue({
+      id: 'connection-1',
+      requester_id: 'me',
+      addressee_id: 'peer-1',
+      status: 'accepted',
+    });
+    mockGetMessages.mockResolvedValue([
+      {
+        id: 'message-1',
+        sender_id: 'me',
+        content: 'Assalamu alaikum',
+        created_at: '2026-01-10T10:00:00.000Z',
+        read_at: '2026-01-10T10:01:00.000Z',
+      },
+      {
+        id: 'message-2',
+        sender_id: 'me',
+        content: 'Checking in',
+        created_at: '2026-01-10T10:02:00.000Z',
+        read_at: '2026-01-10T10:03:00.000Z',
+      },
+    ]);
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => {});
+
+    const touchables = renderer!.root.findAll((node) => String(node.type) === 'MockTouchableOpacity');
+
+    act(() => {
+      touchables[0].props.onPress();
+    });
+
+    const timeStamps = renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp');
+    const seenTimeStamps = timeStamps.filter((node) => node.props.seen === true);
+    const detailTimeStamps = timeStamps.filter((node) => node.props.seen !== true);
+
+    expect(seenTimeStamps).toHaveLength(1);
+    expect(seenTimeStamps[0].props.avatarOnly).toBe(true);
+    expect(seenTimeStamps[0].props.seenAvatar?.uri).toBe('https://cdn.example.com/fatima.jpg');
+    expect(detailTimeStamps).toHaveLength(1);
     expect(detailTimeStamps[0].props.label).toContain('Jan 10, 2026');
 
     unmountRenderer(renderer);

@@ -10,7 +10,17 @@ import SettingsService from "@/services/settings";
 type SessInfo = {
   userEmail?: string | null;
   createdAt?: string | null;
+  lastSeenAt?: string | null;
   expiresAt?: string | null;
+};
+
+type SessionItem = {
+  id: string;
+  title: string;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  isCurrent: boolean;
 };
 
 export default function SessionsSettings() {
@@ -20,17 +30,29 @@ export default function SessionsSettings() {
   const { colors, sizes, assets } = theme;
 
   const [info, setInfo] = useState<SessInfo>({});
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [working, setWorking] = useState<"others" | "all" | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const session = await SettingsService.getSessionInfo();
+        const rows = await SettingsService.getSessions();
         setInfo({
           userEmail: session.user_email,
           createdAt: new Date(session.created_at).toLocaleString(),
+          lastSeenAt: new Date(session.last_seen_at).toLocaleString(),
           expiresAt: new Date(session.expires_at).toLocaleString(),
         });
+        setSessions(rows.map((row) => ({
+          id: row.id,
+          title: row.user_agent?.trim() || 'Unknown device',
+          createdAt: new Date(row.created_at).toLocaleString(),
+          lastSeenAt: new Date(row.last_seen_at).toLocaleString(),
+          expiresAt: new Date(row.expires_at).toLocaleString(),
+          isCurrent: row.is_current,
+        })));
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to load session info";
         show("error", message);
@@ -72,6 +94,20 @@ export default function SessionsSettings() {
     </Block>
   );
 
+  const revokeSession = async (sessionId: string) => {
+    setRevokingId(sessionId);
+    try {
+      await SettingsService.revokeSession(sessionId);
+      setSessions((current) => current.filter((session) => session.id !== sessionId));
+      show("success", "Session removed");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove session';
+      show("error", message);
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   return (
     <Block safe flex={1} color={colors.background} paddingHorizontal={sizes.padding}>
       {/* Header */}
@@ -94,7 +130,51 @@ export default function SessionsSettings() {
       <Block paddingHorizontal={sizes.md}>
         <Row label="Signed in as" value={info.userEmail} />
         <Row label="Session created" value={info.createdAt} />
+        <Row label="Last active" value={info.lastSeenAt} />
         <Row label="Session expires" value={info.expiresAt} />
+
+        <Block marginTop={sizes.m}>
+          <Text h6 semibold>Active devices</Text>
+          <Text size={12} color={colors.gray} marginTop={sizes.xs} marginBottom={sizes.s}>
+            Review where your account is signed in and remove sessions you no longer trust.
+          </Text>
+
+          {sessions.map((session) => (
+            <Block
+              key={session.id}
+              color={colors.card}
+              radius={sizes.md}
+              padding={sizes.m}
+              marginBottom={sizes.s}
+              shadow
+            >
+              <Block row justify="space-between" align="center">
+                <Text p semibold>{session.title}</Text>
+                {session.isCurrent ? (
+                  <Text size={12} color={colors.primary} semibold>This device</Text>
+                ) : (
+                  <Button
+                    onPress={() => void revokeSession(session.id)}
+                    disabled={working !== null || revokingId !== null}
+                  >
+                    <Text p semibold color={colors.danger}>
+                      {revokingId === session.id ? 'Removing…' : 'Delete'}
+                    </Text>
+                  </Button>
+                )}
+              </Block>
+              <Text size={12} color={colors.gray} marginTop={sizes.xs}>
+                Last active: {session.lastSeenAt}
+              </Text>
+              <Text size={12} color={colors.gray} marginTop={2}>
+                Signed in: {session.createdAt}
+              </Text>
+              <Text size={12} color={colors.gray} marginTop={2}>
+                Expires: {session.expiresAt}
+              </Text>
+            </Block>
+          ))}
+        </Block>
 
         <Block marginTop={sizes.m}>
           <Button onPress={signOutOthers} disabled={working !== null}>

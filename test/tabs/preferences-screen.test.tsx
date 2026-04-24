@@ -170,4 +170,31 @@ describe('Preferences screen', () => {
     });
     expect(mockShow).toHaveBeenCalledWith('success', 'Preferences saved');
   });
+
+  it('clears all preferences through the settings service', async () => {
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<Preferences />);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      await findButtonByLabel(renderer!.root, 'Clear Preferences')?.props.onPress();
+    });
+
+    expect(mockUpdateMatchPreferences).toHaveBeenCalledWith({
+      min_age: null,
+      max_age: null,
+      country: null,
+      state: null,
+      city: null,
+      education: null,
+      prayer_regularity: null,
+      quran_level: null,
+      marital_status: null,
+    });
+    expect(findInputByPlaceholder(renderer!.root, 'e.g. 20')?.props.value).toBe('');
+    expect(findInputByPlaceholder(renderer!.root, 'e.g. Hyderabad')?.props.value).toBe('');
+    expect(mockShow).toHaveBeenCalledWith('success', 'Preferences cleared');
+  });
 });

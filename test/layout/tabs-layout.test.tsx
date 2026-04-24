@@ -21,12 +21,22 @@ jest.mock('@/hooks', () => ({
   useData: () => ({
     theme: mockTheme,
   }),
+  useRealtime: () => ({
+    summary: {
+      unread_chat_count: 1,
+      pending_message_request_count: 1,
+      photo_request_count: 2,
+      unread_match_count: 1,
+    },
+  }),
 }));
 
 jest.mock('@/components', () => {
   const React = require('react');
   return {
+    Block: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) => React.createElement('MockBlock', props, children),
     Image: (props: Record<string, unknown>) => React.createElement('MockImage', props),
+    Text: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) => React.createElement('MockText', props, children),
   };
 });
 
@@ -39,6 +49,9 @@ jest.mock('expo-router', () => {
   TabsComponent.Screen = (props: Record<string, unknown>) => React.createElement('MockTabsScreen', props);
 
   return {
+    router: {
+      push: jest.fn(),
+    },
     Tabs: TabsComponent,
   };
 });
@@ -73,7 +86,13 @@ describe('Tabs layout', () => {
       'chat/[id]',
     ]);
 
-    expect(screens[4]?.props.options).toEqual({ href: null });
-    expect(screens[5]?.props.options).toEqual({ href: null });
+    expect(screens[4]?.props.options).toEqual({ href: null, headerShown: false });
+    expect(screens[5]?.props.options).toEqual({ href: null, headerShown: false });
+
+    const tabsNode = mountedRenderer.root.find((node) => String(node.type) === 'MockTabs');
+    const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
+
+    expect(chatIcon).toBeTruthy();
+    expect(tabsNode.props.screenOptions.headerShown).toBe(false);
   });
 });

@@ -169,7 +169,6 @@ const Profile = () => {
             source={assets.background}
           >
             <Block row justify="space-between" align="center">
-              {/* Back */}
               <Button row flex={0} justify="flex-start" onPress={() => router.back()}>
                 <Image
                   radius={0}

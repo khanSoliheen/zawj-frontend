@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, TouchableOpacity } from 'react-native';
 
-import { Block, Text, Input, Image } from '@/components';
+import { Block, Text, Input, Image, NotificationBellButton } from '@/components';
 import { buildUserRoute } from '@/constants/routes';
 import { useData, useToast } from '@/hooks';
 import UserService, { type UserCard } from '@/services/users';
@@ -262,45 +262,56 @@ export default function Home() {
   };
 
   return (
-    <Block safe flex={1} color={colors.background} paddingHorizontal={sizes.padding}>
-      <Input
-        search
-        placeholder="Search profiles…"
-        marginBottom={sizes.s}
-        value={query}
-        onChangeText={setQuery}
-      />
+    <Block flex={1} color={colors.background}>
+      <Block flex={1} paddingHorizontal={sizes.padding}>
+        <Block
+          row
+          flex={0}
+          justify="flex-end"
+          paddingTop={sizes.s}
+          paddingBottom={sizes.s}
+        >
+          <NotificationBellButton />
+        </Block>
+        <Input
+          search
+          placeholder="Search profiles…"
+          marginBottom={sizes.s}
+          value={query}
+          onChangeText={setQuery}
+        />
 
-      <FlatList
-        data={rows}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCard}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: sizes.l, paddingTop: sizes.s }}
-        onEndReachedThreshold={0.5}
-        onEndReached={() => {
-          if (!loading && !loadingMore && !done) {
-            loadingMoreRef.current = true;
-            setLoadingMore(true);
-            fetchPage(false).finally(() => {
-              loadingMoreRef.current = false;
-              setLoadingMore(false);
-            });
+        <FlatList
+          data={rows}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCard}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: sizes.l, paddingTop: sizes.s }}
+          onEndReachedThreshold={0.5}
+          onEndReached={() => {
+            if (!loading && !loadingMore && !done) {
+              loadingMoreRef.current = true;
+              setLoadingMore(true);
+              fetchPage(false).finally(() => {
+                loadingMoreRef.current = false;
+                setLoadingMore(false);
+              });
+            }
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.text as string}
+            />
           }
-        }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.text as string}
-          />
-        }
-        ListEmptyComponent={
-          loading
-            ? <Text p center color={colors.gray}>Loading…</Text>
-            : <Text p center color={colors.gray}>No profiles found</Text>
-        }
-      />
+          ListEmptyComponent={
+            loading
+              ? <Text p center color={colors.gray}>Loading…</Text>
+              : <Text p center color={colors.gray}>No profiles found</Text>
+          }
+        />
+      </Block>
     </Block>
   );
 }

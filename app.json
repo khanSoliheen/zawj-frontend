@@ -16,10 +16,16 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       "expo-splash-screen",
       "expo-sqlite",
       "@react-native-community/datetimepicker"
     ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

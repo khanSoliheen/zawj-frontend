@@ -4,6 +4,29 @@ import React, { useEffect, useState } from "react";
 import { Block, Button, Text, Image } from "@/components";
 import { useData, useToast } from "@/hooks";
 import SettingsService, { type BlockedUserRow } from "@/services/settings";
+import { toUserMessage } from "@/utils/errors";
+
+const formatBlockedAt = (value?: string) => {
+  if (!value) return 'Blocked recently';
+
+  const blockedAt = new Date(value);
+  const diffMs = Date.now() - blockedAt.getTime();
+  if (Number.isNaN(blockedAt.getTime()) || diffMs < 0) {
+    return 'Blocked recently';
+  }
+
+  const diffMinutes = Math.floor(diffMs / 60_000);
+  if (diffMinutes < 1) return 'Blocked just now';
+  if (diffMinutes < 60) return `Blocked ${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `Blocked ${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `Blocked ${diffDays}d ago`;
+
+  return `Blocked ${blockedAt.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+};
 
 export default function BlockedUsers() {
   const { theme } = useData();
@@ -20,8 +43,7 @@ export default function BlockedUsers() {
         const blocked = await SettingsService.getBlockedUsers();
         setRows(blocked);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to load blocked users";
-        show("error", message);
+        show("error", toUserMessage(error, "Failed to load blocked users"));
       } finally {
         setLoading(false);
       }
@@ -36,25 +58,43 @@ export default function BlockedUsers() {
       show("success", "User unblocked");
     } catch (e) {
       setRows(prevRows);
-      const message = e instanceof Error ? e.message : 'Failed to unblock';
-      show("error", message);
+      show("error", toUserMessage(e, 'Failed to unblock'));
     }
   };
 
   const Row = ({ row }: { row: BlockedUserRow }) => (
-    <Block row align="center" justify="space-between" paddingVertical={sizes.sm}>
-      <Block row align="center">
+    <Block
+      row
+      align="center"
+      justify="space-between"
+      color={colors.card}
+      radius={sizes.cardRadius || 16}
+      padding={sizes.m}
+      marginBottom={sizes.s}
+      shadow
+    >
+      <Block row align="center" flex={1}>
         <Image
-          radius={8}
-          width={36}
-          height={36}
+          radius={24}
+          width={48}
+          height={48}
           source={row.avatar_url ? { uri: row.avatar_url } : assets.avatar1}
         />
-        <Block marginLeft={sizes.s}>
+        <Block marginLeft={sizes.s} flex={1}>
           <Text p semibold>{row.full_name || "User"}</Text>
+          <Text size={12} color={colors.gray} marginTop={2}>
+            {formatBlockedAt(row.created_at)}
+          </Text>
         </Block>
       </Block>
-      <Button onPress={() => onUnblock(row.blocked_user_id)}>
+      <Button
+        color={colors.card}
+        outlined={colors.danger as string}
+        shadow={false}
+        paddingVertical={sizes.xs}
+        paddingHorizontal={sizes.s}
+        onPress={() => onUnblock(row.blocked_user_id)}
+      >
         <Text p semibold color={colors.danger}>Unblock</Text>
       </Button>
     </Block>
@@ -80,11 +120,21 @@ export default function BlockedUsers() {
 
       {/* Body */}
       {loading ? (
-        <Text p color={colors.gray}>Loading…</Text>
+        <Block color={colors.card} radius={sizes.cardRadius || 16} padding={sizes.m}>
+          <Text p color={colors.gray}>Loading blocked users…</Text>
+        </Block>
       ) : rows.length === 0 ? (
-        <Text p color={colors.gray}>You haven’t blocked anyone.</Text>
+        <Block color={colors.card} radius={sizes.cardRadius || 16} padding={sizes.m}>
+          <Text p semibold>No blocked users</Text>
+          <Text p color={colors.gray} marginTop={sizes.xs}>
+            People you block will show up here so you can review or unblock them later.
+          </Text>
+        </Block>
       ) : (
         <Block paddingHorizontal={sizes.md}>
+          <Text size={12} color={colors.gray} marginBottom={sizes.s}>
+            Blocked users can’t contact you or see your profile until you unblock them.
+          </Text>
           {rows.map((row) => (
             <Row key={row.blocked_user_id} row={row} />
           ))}

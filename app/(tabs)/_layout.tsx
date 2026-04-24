@@ -2,12 +2,14 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { Image } from '@/components';
-import { useData } from '@/hooks';
+import { Block, Image } from '@/components';
+import { useData, useRealtime } from '@/hooks';
 
 export default function TabsLayout() {
   const { theme } = useData();
+  const { summary } = useRealtime();
   const { colors, assets } = theme;
+  const hasUnreadChats = summary.unread_chat_count > 0;
 
   return (
     <Tabs
@@ -41,13 +43,25 @@ export default function TabsLayout() {
         options={{
           title: 'Chat',
           tabBarIcon: ({ color }) => (
-            <Image
-              source={assets.chat}
-              color={color}
-              width={22}
-              height={22}
-              radius={0}
-            />
+            <Block flex={0}>
+              <Image
+                source={assets.chat}
+                color={color}
+                width={22}
+                height={22}
+                radius={0}
+              />
+              {hasUnreadChats ? (
+                <Block
+                  flex={0}
+                  color={colors.primary}
+                  radius={4}
+                  width={8}
+                  height={8}
+                  style={{ position: 'absolute', right: -3, top: -1 }}
+                />
+              ) : null}
+            </Block>
           ),
         }}
       />
@@ -87,11 +101,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="users/[id]"
-        options={{ href: null }}   // ❌ removes from tab bar
+        options={{ href: null, headerShown: false }}
       />
       <Tabs.Screen
         name="chat/[id]"
-        options={{ href: null }}   // ❌ removes from tab bar
+        options={{ href: null, headerShown: false }}
       />
       {/*<Tabs.Screen
         name="profile/['*']"

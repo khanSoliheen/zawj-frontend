@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
+import { registerDeviceForPush, unregisterDevicePushToken } from '@/hooks/usePushNotifications';
 import SessionService, {
   type SessionUser,
   type SignInCredentials,
@@ -23,6 +24,7 @@ const AuthContext = createContext<{
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pushToken, setPushToken] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,6 +58,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!currentUser) {
+      return undefined;
+    }
+
+    void (async () => {
+      try {
+        const token = await registerDeviceForPush();
+        if (!cancelled) {
+          setPushToken(token);
+        }
+      } catch {
+        if (!cancelled) {
+          setPushToken(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser || !pushToken) {
+      return undefined;
+    }
+
+    void unregisterDevicePushToken(pushToken).catch(() => undefined);
+    setPushToken(null);
+    return undefined;
+  }, [currentUser, pushToken]);
 
   const login = async (credentials: SignInCredentials) => {
     const user = await SessionService.signIn(credentials);

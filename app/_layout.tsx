@@ -7,6 +7,7 @@ import '@/i18n';
 import { ToastProvider } from '@/hooks/toaster';
 import { DataProvider, useData } from '@/hooks/useData';
 import { AuthProvider, useAuth } from '@/hooks/userContext';
+import { RealtimeProvider } from '@/hooks/useRealtime';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { getNavigationRedirect } from '@/utils/navigation';
 
@@ -62,7 +63,9 @@ export default function Layout() {
     <DataProvider>
       <AuthProvider>
         <ToastProvider>
-          <AppContainer />
+          <RealtimeProvider>
+            <AppContainer />
+          </RealtimeProvider>
         </ToastProvider>
       </AuthProvider>
     </DataProvider>

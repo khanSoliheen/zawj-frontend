@@ -26,6 +26,13 @@ pnpm exec tsc --noEmit
 pnpm exec jest --runInBand --passWithNoTests=false
 ```
 
+This validates the suite, but it does not guarantee the right test depth by itself.
+Before committing a UI or flow change, confirm you also added or updated:
+
+1. a state-specific regression test for the new behavior
+2. any changed service mocks or route param mocks
+3. error-path expectations if the change touches API handling or toasts
+
 ### `commit-msg`
 
 Checks:
@@ -63,8 +70,9 @@ If an agent is preparing a commit, it should:
 
 1. confirm the change set is intentional
 2. confirm lint, typecheck, and tests are green
-3. avoid bundling unrelated repo noise
-4. write a commit message that describes the actual outcome, not the activity
+3. confirm the change is covered beyond the happy path when it affects stateful UI
+4. avoid bundling unrelated repo noise
+5. write a commit message that describes the actual outcome, not the activity
 
 Preferred style:
 

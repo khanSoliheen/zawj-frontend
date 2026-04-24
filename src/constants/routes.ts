@@ -28,6 +28,7 @@ export const ROUTES = {
   SETTINGS_VISIBILITY: '/screens/settings/visibility',
   SETTINGS_PHOTO_REQUESTS: '/screens/settings/photo-requests',
   SETTINGS_DELETE_ACCOUNT: '/screens/settings/delete-account',
+  NOTIFICATIONS_CENTER: '/screens/notifications-center',
   SUPPORT: '/screens/support',
 } as const;
 

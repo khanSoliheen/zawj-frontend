@@ -40,6 +40,9 @@ jest.mock('@/hooks', () => ({
       id: 'me',
     },
   }),
+  useRealtime: () => ({
+    lastEvent: null,
+  }),
 }));
 
 jest.mock('@react-navigation/native', () => ({
@@ -70,7 +73,7 @@ import { buildChatRoute } from '@/constants/routes';
 describe('ChatList screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.useFakeTimers();
+    jest.useRealTimers();
     jest.spyOn(StatusBar, 'setBarStyle').mockImplementation(jest.fn());
     mockGetConversations.mockResolvedValue([
       {
@@ -87,7 +90,6 @@ describe('ChatList screen', () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
     jest.useRealTimers();
   });
 

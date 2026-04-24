@@ -62,12 +62,14 @@ describe('NotificationSettings screen', () => {
     mockGetNotificationSettings.mockResolvedValue({
       push: true,
       messages: true,
+      matches: true,
       marketing: false,
       sounds: false,
     });
     mockUpdateNotificationSettings.mockResolvedValue({
       push: true,
       messages: true,
+      matches: true,
       marketing: true,
       sounds: false,
     });
@@ -83,12 +85,13 @@ describe('NotificationSettings screen', () => {
     const switches = renderer!.root.findAll((node) => String(node.type) === 'MockSwitch');
 
     await act(async () => {
-      await switches[2]?.props.onPress(true);
+      await switches[3]?.props.onPress(true);
     });
 
     expect(mockUpdateNotificationSettings).toHaveBeenCalledWith({
       push: true,
       messages: true,
+      matches: true,
       marketing: true,
       sounds: false,
     });

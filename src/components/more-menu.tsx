@@ -1,6 +1,7 @@
 // components/MoreMenu.tsx
 import { router } from "expo-router";
 import React from "react";
+import type { ColorValue, ImageSourcePropType } from "react-native";
 import { Pressable } from "react-native";
 
 import { ROUTES } from '@/constants/routes';
@@ -22,6 +23,46 @@ type Props = {
 export default function MoreMenu({ targetUserId, chatId, visible, onClose }: Props) {
   const { theme } = useData();
   const { colors, sizes, assets } = theme;
+
+  const MenuRow = ({
+    icon,
+    iconColor,
+    label,
+    labelColor,
+    onPress,
+    withDivider = false,
+  }: {
+    icon: ImageSourcePropType;
+    iconColor: ColorValue;
+    label: string;
+    labelColor: ColorValue;
+    onPress: () => void;
+    withDivider?: boolean;
+  }) => (
+    <Button onPress={onPress}>
+      <Block
+        row
+        align="center"
+        paddingVertical={sizes.sm}
+        style={withDivider ? { borderBottomWidth: 1, borderBottomColor: 'rgba(127,127,127,0.12)' } : undefined}
+      >
+        <Block
+          flex={0}
+          width={32}
+          height={32}
+          radius={16}
+          align="center"
+          justify="center"
+          color="rgba(127,127,127,0.10)"
+        >
+          <Image radius={0} width={16} height={16} source={icon} color={iconColor} />
+        </Block>
+        <Text p semibold marginLeft={sizes.s} color={labelColor}>
+          {label}
+        </Text>
+      </Block>
+    </Button>
+  );
 
   const goReport = () => {
     // prefill reported_user_id + context
@@ -63,22 +104,25 @@ export default function MoreMenu({ targetUserId, chatId, visible, onClose }: Pro
         paddingVertical={sizes.m}
         radius={16}
       >
-        <Button onPress={goReport}>
-          <Block row align="center" paddingVertical={sizes.s}>
-            <Image radius={0} width={18} height={18} source={assets.apple} color={colors.danger} />
-            <Text p semibold marginLeft={sizes.s} color={colors.danger}>Report user</Text>
-          </Block>
-        </Button>
+        <MenuRow
+          icon={assets.warning}
+          iconColor={colors.danger}
+          label="Report user"
+          labelColor={colors.danger}
+          onPress={goReport}
+          withDivider
+        />
 
-        <Button onPress={goBlock}>
-          <Block row align="center" paddingVertical={sizes.s}>
-            <Image radius={0} width={18} height={18} source={assets.apple} color={colors.text} />
-            <Text p semibold marginLeft={sizes.s}>Block user</Text>
-          </Block>
-        </Button>
+        <MenuRow
+          icon={assets.close}
+          iconColor={colors.text}
+          label="Block user / unblock user"
+          labelColor={colors.text}
+          onPress={goBlock}
+        />
 
         <Button onPress={onClose}>
-          <Block row align="center" justify="center" paddingVertical={sizes.s}>
+          <Block row align="center" justify="center" paddingVertical={sizes.sm} marginTop={sizes.xs}>
             <Text p color={colors.link}>Cancel</Text>
           </Block>
         </Button>

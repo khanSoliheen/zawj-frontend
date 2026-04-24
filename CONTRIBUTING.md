@@ -51,6 +51,40 @@ Prefer behavior tests over snapshots.
 
 If you refactor an implementation boundary, also refactor the tests and mocks that depend on that boundary. Do not keep legacy Supabase-style tests after moving a flow to REST services, and do not keep stale service mocks after changing function signatures.
 
+For any user-facing stateful flow, do not stop at the happy path. Add focused regression coverage for the states your change can introduce:
+
+1. loading
+2. empty
+3. success
+4. backend error
+5. permission/blocked/disabled state
+6. route-param or stale-data edge cases when relevant
+
+Examples:
+
+- chat changes should cover blocked, pending, accepted, unread, and realtime update states
+- settings changes should cover saved, failed-save, and empty/default states
+- notification changes should cover each notification type and its action buttons
+
+## Error Handling
+
+- backend responses should return clean user messages without framework prefixes
+- frontend screens should normalize unknown errors through shared helpers instead of repeating `error instanceof Error ? ...`
+- if you change API error behavior, add or update a test for the normalized message shape
+
+## Toast Rules
+
+Use toasts for:
+
+- failures
+- destructive confirmations that are not otherwise visible
+- success states where the UI does not already make the outcome obvious
+
+Do not use toasts for:
+
+- routine state transitions already reflected in the screen
+- accept/decline/save flows where the card, list, or route state visibly changes immediately
+
 Priority order:
 
 1. auth/session

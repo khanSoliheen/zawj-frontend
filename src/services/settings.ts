@@ -3,6 +3,7 @@ import ApiService from '@/services/api';
 export type NotificationPrefs = {
   push: boolean;
   messages: boolean;
+  matches: boolean;
   marketing: boolean;
   sounds: boolean;
 };
@@ -19,6 +20,50 @@ export type PhotoAccessRequestRow = {
   full_name?: string | null;
   avatar_url?: string | null;
   requested_at: string;
+};
+
+export type NotificationSummary = {
+  unread_chat_count: number;
+  pending_message_request_count: number;
+  photo_request_count: number;
+  unread_match_count: number;
+};
+
+export type MatchNotificationItem = {
+  id: string;
+  user_id?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  created_at: string;
+};
+
+export type MessageRequestNotificationItem = {
+  connection_id: string;
+  user_id: string;
+  conversation_id?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  created_at: string;
+};
+
+export type UnreadMessageNotificationItem = {
+  conversation_id: string;
+  user_id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  message_preview: string;
+  created_at: string;
+};
+
+export type NotificationCenterResponse = {
+  unread_chat_count: number;
+  pending_message_request_count: number;
+  unread_match_count: number;
+  photo_request_count: number;
+  photo_requests: PhotoAccessRequestRow[];
+  message_requests: MessageRequestNotificationItem[];
+  matches: MatchNotificationItem[];
+  unread_messages: UnreadMessageNotificationItem[];
 };
 
 export type MatchPreferences = {
@@ -47,7 +92,17 @@ export type BlockStatusResponse = {
 export type SessionInfoResponse = {
   user_email: string;
   created_at: string;
+  last_seen_at: string;
   expires_at: string;
+};
+
+export type SessionListItem = {
+  id: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  user_agent?: string | null;
+  is_current: boolean;
 };
 
 export type ReportPayload = {
@@ -63,6 +118,12 @@ export type SupportPayload = {
   email: string;
   app_version?: string;
   platform?: string;
+};
+
+export type PushTokenPayload = {
+  token: string;
+  platform: string;
+  device_name?: string | null;
 };
 
 class SettingsService {
@@ -92,6 +153,18 @@ class SettingsService {
 
   static async getPhotoRequests() {
     return ApiService.get<PhotoAccessRequestRow[]>('/settings/photo-requests');
+  }
+
+  static async getNotificationSummary() {
+    return ApiService.get<NotificationSummary>('/settings/notification-summary');
+  }
+
+  static async getNotificationCenter() {
+    return ApiService.get<NotificationCenterResponse>('/settings/notification-center');
+  }
+
+  static async markNotificationCenterSeen() {
+    return ApiService.post<{ message: string }>('/settings/notification-center/seen');
   }
 
   static async requestPhotoAccess(userId: string) {
@@ -128,6 +201,22 @@ class SettingsService {
 
   static async getSessionInfo() {
     return ApiService.get<SessionInfoResponse>('/settings/session');
+  }
+
+  static async getSessions() {
+    return ApiService.get<SessionListItem[]>('/settings/sessions');
+  }
+
+  static async revokeSession(sessionId: string) {
+    return ApiService.delete<{ message: string }>(`/settings/session/${encodeURIComponent(sessionId)}`);
+  }
+
+  static async registerPushToken(payload: PushTokenPayload) {
+    return ApiService.post<{ message: string }, PushTokenPayload>('/settings/push-token', payload);
+  }
+
+  static async deletePushToken(token: string) {
+    return ApiService.delete<{ message: string }>(`/settings/push-token/${encodeURIComponent(token)}`);
   }
 
   static async logoutOtherSessions() {

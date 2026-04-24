@@ -8,6 +8,18 @@ import SettingsService, { type MatchPreferences } from "@/services/settings";
 const PRAYER_OPTIONS = ['5x daily', 'Regularly', 'Sometimes', 'Rarely', 'Never'];
 const MARITAL_OPTIONS = ['Single', 'Married', 'Divorced', 'Widowed'];
 
+const EMPTY_PREFERENCES: MatchPreferences = {
+  min_age: null,
+  max_age: null,
+  country: null,
+  state: null,
+  city: null,
+  education: null,
+  prayer_regularity: null,
+  quran_level: null,
+  marital_status: null,
+};
+
 const Preferences = () => {
   const { theme } = useData();
   const { show } = useToast();
@@ -26,6 +38,45 @@ const Preferences = () => {
   const [saving, setSaving] = useState(false);
 
   const sanitizeAgeInput = (value: string) => value.replace(/\D/g, "");
+
+  const Section = ({
+    title,
+    description,
+    children,
+  }: {
+    title: string;
+    description?: string;
+    children: React.ReactNode;
+  }) => (
+    <Block
+      color={colors.card}
+      radius={sizes.cardRadius || 16}
+      padding={sizes.m}
+      marginBottom={sizes.m}
+      shadow
+    >
+      <Text h5 semibold marginBottom={sizes.xs}>
+        {title}
+      </Text>
+      {description ? (
+        <Text size={12} color={colors.gray} marginBottom={sizes.m}>
+          {description}
+        </Text>
+      ) : null}
+      {children}
+    </Block>
+  );
+
+  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+    <Text
+      size={12}
+      semibold
+      color={colors.input}
+      marginBottom={sizes.xs}
+    >
+      {children}
+    </Text>
+  );
 
   useEffect(() => {
     (async () => {
@@ -61,6 +112,28 @@ const Preferences = () => {
     marital_status: maritalStatus.trim() || null,
   });
 
+  const clearPreferences = async () => {
+    setSaving(true);
+    try {
+      await SettingsService.updateMatchPreferences(EMPTY_PREFERENCES);
+      setMinAge("");
+      setMaxAge("");
+      setCountry("");
+      setState("");
+      setCity("");
+      setEducation("");
+      setPrayerRegularity("");
+      setQuranLevel("");
+      setMaritalStatus("");
+      show("success", "Preferences cleared");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to clear preferences";
+      show("error", message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const applyFilters = async () => {
     if (minAge && maxAge && Number(minAge) > Number(maxAge)) {
       Alert.alert(
@@ -90,90 +163,124 @@ const Preferences = () => {
           paddingBottom: sizes.l,
         }}
       >
-        <Text h5 semibold marginBottom={sizes.m}>
+        <Text h5 semibold>
           Preferences & Filters
         </Text>
-        <Text gray size={sizes.s} marginBottom={sizes.m}>
+        <Text gray size={sizes.s} marginTop={sizes.xs} marginBottom={sizes.m}>
           Saved preferences are automatically applied to your profile list.
         </Text>
 
-        <Block row justify="space-between" marginBottom={sizes.m}>
-          <Block flex={1} marginRight={sizes.s}>
-            <Text gray size={sizes.s}>Min Age</Text>
+        <Section
+          title="Age Range"
+          description="Choose the age range you want to see first in your feed."
+        >
+          <Block row justify="space-between">
+            <Block flex={1} marginRight={sizes.s}>
+              <FieldLabel>Min Age</FieldLabel>
+              <Input
+                keyboardType="numeric"
+                value={minAge}
+                onChangeText={(value) => setMinAge(sanitizeAgeInput(value))}
+                placeholder="e.g. 20"
+                noMarginBottom
+              />
+            </Block>
+            <Block flex={1} marginLeft={sizes.s}>
+              <FieldLabel>Max Age</FieldLabel>
+              <Input
+                keyboardType="numeric"
+                value={maxAge}
+                onChangeText={(value) => setMaxAge(sanitizeAgeInput(value))}
+                placeholder="e.g. 35"
+                noMarginBottom
+              />
+            </Block>
+          </Block>
+        </Section>
+
+        <Section
+          title="Location"
+          description="Use location filters to prioritize nearby or preferred regions."
+        >
+          <FieldLabel>Country</FieldLabel>
+          <Input
+            placeholder="e.g. India"
+            value={country}
+            onChangeText={setCountry}
+            noMarginBottom
+          />
+
+          <Block marginTop={sizes.m}>
+            <FieldLabel>State</FieldLabel>
             <Input
-              keyboardType="numeric"
-              value={minAge}
-              onChangeText={(value) => setMinAge(sanitizeAgeInput(value))}
-              placeholder="e.g. 20"
+              placeholder="e.g. Telangana"
+              value={state}
+              onChangeText={setState}
+              noMarginBottom
             />
           </Block>
-          <Block flex={1} marginLeft={sizes.s}>
-            <Text gray size={sizes.s}>Max Age</Text>
+
+          <Block marginTop={sizes.m}>
+            <FieldLabel>City</FieldLabel>
             <Input
-              keyboardType="numeric"
-              value={maxAge}
-              onChangeText={(value) => setMaxAge(sanitizeAgeInput(value))}
-              placeholder="e.g. 35"
+              placeholder="e.g. Hyderabad"
+              value={city}
+              onChangeText={setCity}
+              noMarginBottom
             />
           </Block>
-        </Block>
+        </Section>
 
-        <Text gray size={sizes.s}>Country</Text>
-        <Input
-          placeholder="e.g. India"
-          value={country}
-          onChangeText={setCountry}
-          marginBottom={sizes.m}
-        />
+        <Section
+          title="Lifestyle & Background"
+          description="Set the profile qualities that matter most to you."
+        >
+          <FieldLabel>Education</FieldLabel>
+          <Input
+            placeholder="e.g. MSc, B.Tech, MBA"
+            value={education}
+            onChangeText={setEducation}
+            noMarginBottom
+          />
 
-        <Text gray size={sizes.s}>State</Text>
-        <Input
-          placeholder="e.g. Telangana"
-          value={state}
-          onChangeText={setState}
-          marginBottom={sizes.m}
-        />
+          <Block marginTop={sizes.m}>
+            <FieldLabel>Marital Status</FieldLabel>
+            <SelectInput
+              label=""
+              options={MARITAL_OPTIONS}
+              value={maritalStatus}
+              onChange={setMaritalStatus}
+              noMarginBottom
+            />
+          </Block>
 
-        <Text gray size={sizes.s}>City</Text>
-        <Input
-          placeholder="e.g. Hyderabad"
-          value={city}
-          onChangeText={setCity}
-          marginBottom={sizes.m}
-        />
+          <Block marginTop={sizes.m}>
+            <FieldLabel>Prayer Regularity</FieldLabel>
+            <SelectInput
+              label=""
+              options={PRAYER_OPTIONS}
+              value={prayerRegularity}
+              onChange={setPrayerRegularity}
+              noMarginBottom
+            />
+          </Block>
 
-        <Text gray size={sizes.s}>Education</Text>
-        <Input
-          placeholder="e.g. MSc, B.Tech, MBA"
-          value={education}
-          onChangeText={setEducation}
-          marginBottom={sizes.m}
-        />
-
-        <SelectInput
-          label="Marital Status"
-          options={MARITAL_OPTIONS}
-          value={maritalStatus}
-          onChange={setMaritalStatus}
-        />
-
-        <SelectInput
-          label="Prayer Regularity"
-          options={PRAYER_OPTIONS}
-          value={prayerRegularity}
-          onChange={setPrayerRegularity}
-        />
-
-        <Text gray size={sizes.s}>Qur'an Level</Text>
-        <Input
-          placeholder="e.g. Intermediate"
-          value={quranLevel}
-          onChangeText={setQuranLevel}
-          marginBottom={sizes.m}
-        />
+          <Block marginTop={sizes.m}>
+            <FieldLabel>Qur'an Level</FieldLabel>
+            <Input
+              placeholder="e.g. Intermediate"
+              value={quranLevel}
+              onChangeText={setQuranLevel}
+              noMarginBottom
+            />
+          </Block>
+        </Section>
 
         <Button gradient={gradients.secondary} onPress={applyFilters} disabled={loading || saving}>
           <Text white bold>{saving ? "Saving…" : "Apply Filters"}</Text>
+        </Button>
+        <Button marginTop={sizes.s} onPress={clearPreferences} disabled={loading || saving}>
+          <Text p semibold color={colors.link}>Clear Preferences</Text>
         </Button>
       </ScrollView>
     </Block >

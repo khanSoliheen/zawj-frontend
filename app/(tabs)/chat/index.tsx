@@ -6,12 +6,13 @@ import { StatusBar, FlatList, TouchableOpacity, ActivityIndicator } from 'react-
 import type { ChatListItem } from '@/chat/chat-utils';
 import { Block, Image, Text } from '@/components';
 import { buildChatRoute } from '@/constants/routes';
-import { useAuth, useData, useToast } from '@/hooks';
+import { useAuth, useData, useRealtime, useToast } from '@/hooks';
 import ChatService from '@/services/chat';
 
 const ChatList = () => {
   const { theme } = useData();
   const { currentUser } = useAuth();
+  const { lastEvent, eventTick } = useRealtime();
   const { show } = useToast();
   const { colors, sizes, assets } = theme;
 
@@ -71,14 +72,24 @@ const ChatList = () => {
       }
 
       void loadChats({ silent: chats.length > 0 });
-
-      const interval = setInterval(() => {
-        void loadChats({ silent: true });
-      }, 5000);
-
-      return () => clearInterval(interval);
+      return undefined;
     }, [chats.length, loadChats, userId]),
   );
+
+  useEffect(() => {
+    if (!lastEvent || !userId) {
+      return;
+    }
+
+    if (
+      lastEvent.type === 'message_created'
+      || lastEvent.type === 'messages_read'
+      || lastEvent.type === 'connection_updated'
+      || lastEvent.type === 'notification_updated'
+    ) {
+      void loadChats({ silent: true });
+    }
+  }, [eventTick, lastEvent, loadChats, userId]);
 
   const renderItem = ({ item }: { item: ChatListItem }) => (
     <TouchableOpacity onPress={() => router.push({
@@ -150,21 +161,25 @@ const ChatList = () => {
 
   if (loadingInitial) {
     return (
-      <Block safe flex={1} color={colors.background} center align="center" justify="center">
-        <ActivityIndicator size="large" color={colors.primary} />
+      <Block safe flex={1} color={colors.background}>
+        <Block flex={1} center align="center" justify="center">
+          <ActivityIndicator size="large" color={colors.primary} />
+        </Block>
       </Block>
     );
   }
 
   if (chats.length === 0) {
     return (
-      <Block safe flex={1} color={colors.background} center justify="center" align="center">
-        <Image
-          source={assets.avatar2}
-          style={{ width: 120, height: 120, marginBottom: sizes.m }}
-        />
-        <Text h6 gray>No conversations yet</Text>
-        <Text p gray>Start a chat with someone new</Text>
+      <Block safe flex={1} color={colors.background}>
+        <Block flex={1} center justify="center" align="center">
+          <Image
+            source={assets.avatar2}
+            style={{ width: 120, height: 120, marginBottom: sizes.m }}
+          />
+          <Text h6 gray>No conversations yet</Text>
+          <Text p gray>Start a chat with someone new</Text>
+        </Block>
       </Block>
     );
   }
@@ -177,6 +192,7 @@ const ChatList = () => {
         renderItem={renderItem}
         contentContainerStyle={{
           padding: sizes.m,
+          paddingTop: sizes.s,
           paddingBottom: sizes.l,
         }}
       />

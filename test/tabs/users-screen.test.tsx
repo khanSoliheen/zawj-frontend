@@ -82,6 +82,8 @@ jest.mock('@/components', () => {
     Text: ({ children, ...props }: MockComponentProps) => React.createElement('MockText', props, children),
     Input: (props: Record<string, unknown>) => React.createElement('MockInput', props),
     Image: (props: Record<string, unknown>) => React.createElement('MockImage', props),
+    NotificationBellButton: (props: Record<string, unknown>) =>
+      React.createElement('MockNotificationBellButton', props),
   };
 });
 
