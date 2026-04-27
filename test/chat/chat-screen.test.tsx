@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
+import ChatScreen from '@/(tabs)/chat/[id]';
 import { ROUTES } from '@/constants/routes';
 
 const mockGetConnection = jest.fn();
@@ -53,7 +54,7 @@ const mockTheme = {
 };
 
 jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: () => {},
+  useFocusEffect: () => { },
 }));
 
 jest.mock('@/hooks', () => ({
@@ -80,10 +81,10 @@ jest.mock('react-native', () => {
       const renderItem = props.renderItem as any;
       const renderedItems = typeof renderItem === 'function'
         ? items.map((item, index) => React.createElement(
-            React.Fragment,
-            { key: String((item as { id?: string; header?: string }).id ?? (item as { header?: string }).header ?? index) },
-            renderItem({ item, index }),
-          ))
+          React.Fragment,
+          { key: String((item as { id?: string; header?: string }).id ?? (item as { header?: string }).header ?? index) },
+          renderItem({ item, index }),
+        ))
         : null;
 
       return React.createElement('MockFlatList', props, renderedItems ?? props.children);
@@ -138,8 +139,6 @@ jest.mock('@/components', () => {
     TimeStamp: (props: Record<string, unknown>) => React.createElement('MockTimeStamp', props),
   };
 });
-
-import ChatScreen from '@/(tabs)/chat/[id]';
 
 const mockUseLocalSearchParams = useLocalSearchParams as unknown as jest.Mock;
 
@@ -210,7 +209,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -225,7 +224,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -246,7 +245,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -267,7 +266,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const images = renderer!.root.findAll((node) => String(node.type) === 'MockImage');
     expect(images.some((node) => node.props.source?.uri === 'https://cdn.example.com/fatima.jpg')).toBe(true);
@@ -287,7 +286,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(mockGetUser).toHaveBeenCalledWith('peer-1');
 
@@ -304,7 +303,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const textContent = renderer!.root
       .findAll((node) => String(node.type) === 'MockText')
@@ -330,7 +329,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const input = renderer!.root.find((node) => String(node.type) === 'MockInput');
     act(() => {
@@ -365,7 +364,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const dots = renderer!.root.findAll(
       (node) => String(node.type) === 'MockBlock' && node.props.testID === 'typing-dot',
@@ -390,7 +389,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const input = renderer!.root.find((node) => String(node.type) === 'MockInput');
     act(() => {
@@ -440,7 +439,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const initialTimeStamps = renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp');
     expect(initialTimeStamps).toHaveLength(1);
@@ -501,7 +500,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const touchables = renderer!.root.findAll((node) => String(node.type) === 'MockTouchableOpacity');
 
@@ -550,7 +549,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp')).toHaveLength(0);
 
@@ -578,7 +577,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp')).toHaveLength(0);
 

@@ -1,7 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import { Block, Button, Image, Text } from '@/components';
 import { useAuth, useData, useToast } from '@/hooks';

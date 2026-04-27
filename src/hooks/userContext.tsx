@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { registerDeviceForPush, unregisterDevicePushToken } from '@/hooks/usePushNotifications';
 import BillingService, { type BillingStatus } from '@/services/billing';
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [pushToken, setPushToken] = useState<string | null>(null);
 
-  const refreshBillingStatus = async () => {
+  const refreshBillingStatus = useCallback(async () => {
     if (!currentUser) {
       setBillingStatus(null);
       return;
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch {
       setBillingStatus(null);
     }
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     void refreshBillingStatus();
-  }, [currentUser]);
+  }, [refreshBillingStatus]);
 
   useEffect(() => {
     if (currentUser || !pushToken) {
@@ -144,7 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshBillingStatus,
     login,
     logout,
-  }), [billingStatus, currentUser, isLoading]);
+  }), [billingStatus, currentUser, isLoading, refreshBillingStatus]);
 
   return (
     <AuthContext.Provider value={value}>

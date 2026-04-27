@@ -8,6 +8,22 @@ export type NotificationPrefs = {
   sounds: boolean;
 };
 
+export type BillingNotificationItem = {
+  id: string,
+  title: string,
+  body: string,
+  created_at: string,
+}
+
+export type InterestNotificationItem = {
+  id: string,
+  user_id?: string,
+  full_name: string,
+  avatar_url?: string,
+  gender?: string,
+  created_at: string,
+}
+
 export type VisibilityPrefs = {
   discoverable: boolean;
   messages_from: 'everyone' | 'matches';
@@ -16,6 +32,7 @@ export type VisibilityPrefs = {
 };
 
 export type PhotoAccessRequestRow = {
+  gender: string | null | undefined;
   viewer_id: string;
   full_name?: string | null;
   avatar_url?: string | null;
@@ -32,6 +49,7 @@ export type NotificationSummary = {
 };
 
 export type MatchNotificationItem = {
+  gender: string | null | undefined;
   id: string;
   user_id?: string | null;
   full_name: string;
@@ -40,6 +58,7 @@ export type MatchNotificationItem = {
 };
 
 export type MessageRequestNotificationItem = {
+  gender: string | null | undefined;
   connection_id: string;
   user_id: string;
   conversation_id?: string | null;
@@ -49,6 +68,7 @@ export type MessageRequestNotificationItem = {
 };
 
 export type UnreadMessageNotificationItem = {
+  gender: string | null | undefined;
   conversation_id: string;
   user_id: string;
   full_name: string;
@@ -58,6 +78,10 @@ export type UnreadMessageNotificationItem = {
 };
 
 export type NotificationCenterResponse = {
+  unread_interest_count: number;
+  unread_billing_count: number;
+  interests: never[];
+  billing_updates: BillingNotificationItem[];
   unread_chat_count: number;
   pending_message_request_count: number;
   unread_match_count: number;
@@ -81,6 +105,7 @@ export type MatchPreferences = {
 };
 
 export type BlockedUserRow = {
+  gender: string | null | undefined;
   blocked_user_id: string;
   created_at?: string;
   full_name?: string | null;

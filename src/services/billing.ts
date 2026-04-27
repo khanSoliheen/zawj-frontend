@@ -1,7 +1,7 @@
 import * as Linking from 'expo-linking';
 
-import ApiService from '@/services/api';
 import { ROUTES } from '@/constants/routes';
+import ApiService from '@/services/api';
 
 export type BillingOffer = {
   plan_code: string;
