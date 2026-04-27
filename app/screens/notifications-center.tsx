@@ -1,26 +1,34 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
+import { TouchableOpacity } from 'react-native';
 
 import { Block, Button, Image, Text } from '@/components';
-import { buildChatRoute, buildUserRoute } from '@/constants/routes';
+import { ROUTES, buildChatRoute, buildUserRoute } from '@/constants/routes';
 import { useData, useToast } from '@/hooks';
 import ChatService from '@/services/chat';
 import SettingsService, {
+  type BillingNotificationItem,
+  type InterestNotificationItem,
   type MatchNotificationItem,
   type MessageRequestNotificationItem,
   type PhotoAccessRequestRow,
   type UnreadMessageNotificationItem,
 } from '@/services/settings';
+import { getUserAvatarSource } from '@/utils/avatar';
 import { toUserMessage } from '@/utils/errors';
 
 type NotificationState = {
   unreadChatCount: number;
   pendingMessageRequestCount: number;
   unreadMatchCount: number;
+  unreadInterestCount: number;
   photoRequestCount: number;
+  unreadBillingCount: number;
   photoRequests: PhotoAccessRequestRow[];
   messageRequests: MessageRequestNotificationItem[];
   matches: MatchNotificationItem[];
+  interests: InterestNotificationItem[];
+  billingUpdates: BillingNotificationItem[];
   unreadMessages: UnreadMessageNotificationItem[];
 };
 
@@ -28,10 +36,14 @@ const EMPTY_STATE: NotificationState = {
   unreadChatCount: 0,
   pendingMessageRequestCount: 0,
   unreadMatchCount: 0,
+  unreadInterestCount: 0,
   photoRequestCount: 0,
+  unreadBillingCount: 0,
   photoRequests: [],
   messageRequests: [],
   matches: [],
+  interests: [],
+  billingUpdates: [],
   unreadMessages: [],
 };
 
@@ -75,14 +87,18 @@ export default function NotificationsCenter() {
         unreadChatCount: response.unread_chat_count,
         pendingMessageRequestCount: response.pending_message_request_count,
         unreadMatchCount: response.unread_match_count,
+        unreadInterestCount: response.unread_interest_count ?? 0,
         photoRequestCount: response.photo_request_count,
+        unreadBillingCount: response.unread_billing_count,
         photoRequests: response.photo_requests,
         messageRequests: response.message_requests,
         matches: response.matches,
+        interests: response.interests ?? [],
+        billingUpdates: response.billing_updates,
         unreadMessages: response.unread_messages,
       });
 
-      if (response.unread_match_count > 0) {
+      if (response.unread_match_count > 0 || (response.unread_interest_count ?? 0) > 0 || response.unread_billing_count > 0) {
         void SettingsService.markNotificationCenterSeen();
       }
     } catch (error) {
@@ -159,8 +175,9 @@ export default function NotificationsCenter() {
     }
   };
 
-  const Card = ({
+  const NotificationCard = ({
     avatarUrl,
+    gender,
     title,
     body,
     timestamp,
@@ -168,26 +185,24 @@ export default function NotificationsCenter() {
     children,
   }: {
     avatarUrl?: string | null;
+    gender?: string | null;
     title: string;
     body: string;
     timestamp: string;
     onPress?: () => void;
     children?: React.ReactNode;
   }) => (
-    <Button
-      onPress={onPress}
-      disabled={!onPress}
-      style={{ marginBottom: sizes.s }}
+    <Block
+      color={colors.card}
+      radius={sizes.cardRadius || 16}
+      padding={sizes.m}
+      shadow
+      marginBottom={sizes.s}
     >
-      <Block
-        color={colors.card}
-        radius={sizes.cardRadius || 16}
-        padding={sizes.m}
-        shadow
-      >
+      <TouchableOpacity activeOpacity={onPress ? 0.82 : 1} disabled={!onPress} onPress={onPress}>
         <Block row align="center">
           <Image
-            source={avatarUrl ? { uri: avatarUrl } : assets.avatar1}
+            source={getUserAvatarSource({ assets, avatarUrl, gender })}
             width={48}
             height={48}
             radius={24}
@@ -203,15 +218,21 @@ export default function NotificationsCenter() {
             </Text>
           </Block>
         </Block>
-        {children}
-      </Block>
-    </Button>
+      </TouchableOpacity>
+      {children ? (
+        <Block marginTop={sizes.m} paddingTop={sizes.m} style={{ borderTopWidth: 1, borderTopColor: String(colors.background) }}>
+          {children}
+        </Block>
+      ) : null}
+    </Block>
   );
 
   const hasNotifications =
     state.messageRequests.length > 0
     || state.photoRequests.length > 0
     || state.matches.length > 0
+    || state.interests.length > 0
+    || state.billingUpdates.length > 0
     || state.unreadMessages.length > 0;
 
   return (
@@ -231,7 +252,7 @@ export default function NotificationsCenter() {
         <Block width={24} />
       </Block>
 
-      <Block scroll showsVerticalScrollIndicator={false} paddingHorizontal={sizes.md}>
+      <Block scroll showsVerticalScrollIndicator={false} paddingBottom={sizes.xl}>
         {loading ? (
           <Block color={colors.card} radius={sizes.cardRadius || 16} padding={sizes.m}>
             <Text p>Loading notifications…</Text>
@@ -249,9 +270,10 @@ export default function NotificationsCenter() {
               <>
                 <Text h6 semibold marginBottom={sizes.s}>Message requests</Text>
                 {state.messageRequests.map((request) => (
-                  <Card
+                  <NotificationCard
                     key={request.connection_id}
                     avatarUrl={request.avatar_url}
+                    gender={request.gender}
                     title={request.full_name}
                     body="Sent you a first message request"
                     timestamp={formatRelativeTime(request.created_at)}
@@ -287,7 +309,7 @@ export default function NotificationsCenter() {
                         <Text p semibold color={colors.gray}>Decline</Text>
                       </Button>
                     </Block>
-                  </Card>
+                  </NotificationCard>
                 ))}
               </>
             ) : null}
@@ -296,9 +318,10 @@ export default function NotificationsCenter() {
               <>
                 <Text h6 semibold marginTop={sizes.m} marginBottom={sizes.s}>Photo requests</Text>
                 {state.photoRequests.map((request) => (
-                  <Card
+                  <NotificationCard
                     key={request.viewer_id}
                     avatarUrl={request.avatar_url}
+                    gender={request.gender}
                     title={request.full_name || 'User'}
                     body="Requested access to view your photo"
                     timestamp={formatRelativeTime(request.requested_at)}
@@ -329,7 +352,24 @@ export default function NotificationsCenter() {
                         <Text p semibold color={colors.gray}>Decline</Text>
                       </Button>
                     </Block>
-                  </Card>
+                  </NotificationCard>
+                ))}
+              </>
+            ) : null}
+
+            {state.interests.length > 0 ? (
+              <>
+                <Text h6 semibold marginTop={sizes.m} marginBottom={sizes.s}>Interests</Text>
+                {state.interests.map((interest) => (
+                  <NotificationCard
+                    key={interest.id}
+                    avatarUrl={interest.avatar_url}
+                    gender={interest.gender}
+                    title={interest.full_name}
+                    body="Expressed interest in your profile"
+                    timestamp={formatRelativeTime(interest.created_at)}
+                    onPress={() => interest.user_id ? router.push(buildUserRoute(interest.user_id)) : undefined}
+                  />
                 ))}
               </>
             ) : null}
@@ -338,9 +378,10 @@ export default function NotificationsCenter() {
               <>
                 <Text h6 semibold marginTop={sizes.m} marginBottom={sizes.s}>New matches</Text>
                 {state.matches.map((match) => (
-                  <Card
+                  <NotificationCard
                     key={match.id}
                     avatarUrl={match.avatar_url}
+                    gender={match.gender}
                     title={match.full_name}
                     body="You have a new match"
                     timestamp={formatRelativeTime(match.created_at)}
@@ -354,13 +395,29 @@ export default function NotificationsCenter() {
               </>
             ) : null}
 
+            {state.billingUpdates.length > 0 ? (
+              <>
+                <Text h6 semibold marginBottom={sizes.s}>Billing updates</Text>
+                {state.billingUpdates.map((update) => (
+                  <NotificationCard
+                    key={update.id}
+                    title={update.title}
+                    body={update.body}
+                    timestamp={formatRelativeTime(update.created_at)}
+                    onPress={() => router.push(ROUTES.SETTINGS_BILLING)}
+                  />
+                ))}
+              </>
+            ) : null}
+
             {state.unreadMessages.length > 0 ? (
               <>
                 <Text h6 semibold marginTop={sizes.m} marginBottom={sizes.s}>New messages</Text>
                 {state.unreadMessages.map((message) => (
-                  <Card
+                  <NotificationCard
                     key={message.conversation_id}
                     avatarUrl={message.avatar_url}
+                    gender={message.gender}
                     title={message.full_name}
                     body={message.message_preview}
                     timestamp={formatRelativeTime(message.created_at)}

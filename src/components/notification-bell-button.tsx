@@ -20,6 +20,8 @@ const NotificationBellButton = ({ size = 22 }: NotificationBellButtonProps) => {
   const notificationCount =
     summary.photo_request_count
     + summary.unread_match_count
+    + summary.unread_interest_count
+    + summary.unread_billing_count
     + summary.pending_message_request_count
     + summary.unread_chat_count;
 

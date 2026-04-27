@@ -13,7 +13,15 @@ jest.mock('@/services/session', () => ({
   },
 }));
 
+jest.mock('@/services/billing', () => ({
+  __esModule: true,
+  default: {
+    getStatus: jest.fn(),
+  },
+}));
+
 import { AuthProvider, useAuth } from '@/hooks/userContext';
+import BillingService from '@/services/billing';
 import SessionService from '@/services/session';
 
 type AuthSnapshot = ReturnType<typeof useAuth>;
@@ -28,6 +36,9 @@ const mockSessionService = SessionService as unknown as {
   signIn: jest.Mock;
   signOut: jest.Mock;
   onAuthStateChange: jest.Mock;
+};
+const mockBillingService = BillingService as unknown as {
+  getStatus: jest.Mock;
 };
 
 let latestAuth: AuthSnapshot | null = null;
@@ -45,6 +56,18 @@ describe('AuthProvider', () => {
     mockSessionService.signIn.mockResolvedValue(null);
     mockSessionService.signOut.mockResolvedValue(undefined);
     mockSessionService.onAuthStateChange.mockImplementation(() => jest.fn());
+    mockBillingService.getStatus.mockResolvedValue({
+      status: 'free',
+      access_state: 'free',
+      active: false,
+      offer: {
+        plan_code: 'premium_quarterly',
+        price_inr: 500,
+        duration_days: 90,
+        grace_period_days: 3,
+        referral_bonus_premium_days: 30,
+      },
+    });
   });
 
   it('hydrates the initial session from SessionService', async () => {
@@ -67,6 +90,7 @@ describe('AuthProvider', () => {
     expect(mockSessionService.getCurrentUser).toHaveBeenCalled();
     expect(latestAuth?.isLoading).toBe(false);
     expect(latestAuth?.currentUser).toEqual(user);
+    expect(mockBillingService.getStatus).toHaveBeenCalled();
   });
 
   it('updates the current user when the auth listener fires', async () => {

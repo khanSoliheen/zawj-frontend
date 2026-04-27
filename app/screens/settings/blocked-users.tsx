@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Block, Button, Text, Image } from "@/components";
 import { useData, useToast } from "@/hooks";
 import SettingsService, { type BlockedUserRow } from "@/services/settings";
+import { getUserAvatarSource } from "@/utils/avatar";
 import { toUserMessage } from "@/utils/errors";
 
 const formatBlockedAt = (value?: string) => {
@@ -78,7 +79,7 @@ export default function BlockedUsers() {
           radius={24}
           width={48}
           height={48}
-          source={row.avatar_url ? { uri: row.avatar_url } : assets.avatar1}
+          source={getUserAvatarSource({ assets, avatarUrl: row.avatar_url, gender: row.gender })}
         />
         <Block marginLeft={sizes.s} flex={1}>
           <Text p semibold>{row.full_name || "User"}</Text>

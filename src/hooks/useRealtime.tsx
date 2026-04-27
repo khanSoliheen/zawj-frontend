@@ -9,6 +9,8 @@ type RealtimeEvent =
   | { type: 'message_created'; conversation_id: string; sender_id: string; message_id: string }
   | { type: 'messages_read'; conversation_id: string }
   | { type: 'connection_updated'; peer_id: string; status: string }
+  | { type: 'typing_updated'; conversation_id: string; user_id: string; is_typing: boolean }
+  | { type: 'presence_updated'; user_id: string; is_online: boolean }
   | { type: 'notification_updated' };
 
 type RealtimeContextValue = {
@@ -24,6 +26,8 @@ const defaultSummary: NotificationSummary = {
   pending_message_request_count: 0,
   photo_request_count: 0,
   unread_match_count: 0,
+  unread_interest_count: 0,
+  unread_billing_count: 0,
 };
 
 const RealtimeContext = createContext<RealtimeContextValue>({
@@ -31,7 +35,7 @@ const RealtimeContext = createContext<RealtimeContextValue>({
   summary: defaultSummary,
   lastEvent: null,
   eventTick: 0,
-  refreshSummary: async () => {},
+  refreshSummary: async () => { },
 });
 
 export const RealtimeProvider = ({ children }: { children: ReactNode }) => {

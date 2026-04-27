@@ -21,12 +21,22 @@ jest.mock('@/hooks', () => ({
   useData: () => ({
     theme: mockTheme,
   }),
+  useAuth: () => ({
+    currentUser: {
+      userMetadata: {
+        avatar_url: null,
+        gender: 'Male',
+      },
+    },
+  }),
   useRealtime: () => ({
     summary: {
       unread_chat_count: 1,
       pending_message_request_count: 1,
       photo_request_count: 2,
       unread_match_count: 1,
+      unread_interest_count: 0,
+      unread_billing_count: 0,
     },
   }),
 }));

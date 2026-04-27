@@ -95,6 +95,7 @@ export default function Settings() {
         {/* ❤️ Preferences */}
         <SectionHeader title="Match & Preferences" />
         <SettingItem label="Match Preferences" onPress={() => router.push(ROUTES.PREFERENCES)} />
+        <SettingItem label="Premium & Billing" onPress={() => router.push(ROUTES.SETTINGS_BILLING)} />
         <SettingItem label="Notifications" onPress={() => router.push(ROUTES.SETTINGS_NOTIFICATIONS)} />
         <Block
           row

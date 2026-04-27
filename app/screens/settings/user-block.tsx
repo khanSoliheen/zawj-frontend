@@ -8,6 +8,7 @@ import { ROUTES, buildUserRoute } from '@/constants/routes';
 import { useAuth, useData, useToast } from "@/hooks";
 import SettingsService from "@/services/settings";
 import UserService, { type ProfileResponse } from "@/services/users";
+import { getUserAvatarSource } from "@/utils/avatar";
 
 export default function BlockUserScreen() {
   const { theme } = useData();
@@ -174,7 +175,7 @@ export default function BlockUserScreen() {
                   radius={8}
                   width={48}
                   height={48}
-                  source={profile.avatar_url ? { uri: profile.avatar_url } : assets.avatar1}
+                  source={getUserAvatarSource({ assets, avatarUrl: profile.avatar_url, gender: profile.gender })}
                 />
                 <Block marginLeft={sizes.s}>
                   <Text p semibold>{`${profile.first_name} ${profile.last_name}`.trim() || "User"}</Text>

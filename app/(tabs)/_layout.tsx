@@ -3,13 +3,20 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { Block, Image } from '@/components';
-import { useData, useRealtime } from '@/hooks';
+import { useAuth, useData, useRealtime } from '@/hooks';
+import { getUserAvatarSource } from '@/utils/avatar';
 
 export default function TabsLayout() {
   const { theme } = useData();
+  const { currentUser } = useAuth();
   const { summary } = useRealtime();
   const { colors, assets } = theme;
   const hasUnreadChats = summary.unread_chat_count > 0;
+  const profileAvatar = getUserAvatarSource({
+    assets,
+    avatarUrl: typeof currentUser?.userMetadata?.avatar_url === 'string' ? currentUser.userMetadata.avatar_url : null,
+    gender: typeof currentUser?.userMetadata?.gender === 'string' ? currentUser.userMetadata.gender : null,
+  });
 
   return (
     <Tabs
@@ -88,13 +95,16 @@ export default function TabsLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color }) => (
+          tabBarIcon: ({ focused }) => (
             <Image
-              source={assets.profile}
-              color={color}
-              width={22}
-              height={22}
-              radius={0}
+              source={profileAvatar}
+              width={24}
+              height={24}
+              radius={12}
+              style={{
+                borderWidth: focused ? 2 : 1,
+                borderColor: String(focused ? colors.primary : colors.gray),
+              }}
             />
           ),
         }}

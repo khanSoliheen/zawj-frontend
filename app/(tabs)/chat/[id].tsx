@@ -10,10 +10,12 @@ import {
   type MessageListItem,
 } from '@/chat/chat-utils';
 import { AcceptMessage, Block, Bubble, Button, DateDivider, Image, Input, MoreMenu, Text, TimeStamp } from '@/components';
+import { ROUTES } from '@/constants/routes';
 import { useAuth, useData, useRealtime, useToast } from '@/hooks';
 import ChatService, { type Connection } from '@/services/chat';
 import SettingsService from '@/services/settings';
 import UserService from '@/services/users';
+import { getUserAvatarSource } from '@/utils/avatar';
 import { toUserMessage } from '@/utils/errors';
 
 const mergeMessages = (current: Message[], incoming: Message[]) => {
@@ -48,6 +50,10 @@ const getConnectionErrorMessage = (error: unknown) => {
     return 'This profile is not accepting new message requests right now.';
   }
 
+  if (message.includes('premium is required to send new message requests')) {
+    return 'Premium is required to send a new message request.';
+  }
+
   return message;
 };
 
@@ -63,6 +69,12 @@ export default function Chat() {
   const listRef = useRef<FlatList<MessageListItem>>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [isPeerTyping, setIsPeerTyping] = useState(false);
+  const [typingFrame, setTypingFrame] = useState(0);
+  const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const peerTypingClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingSentRef = useRef(false);
+  const lastTypingSignalAtRef = useRef(0);
 
   // NEW: connection object
   const [connection, setConnection] = useState<Connection | null>(null);
@@ -71,6 +83,8 @@ export default function Chat() {
   const [busyAction, setBusyAction] = useState(false);
   const [peerAvatarLoadFailed, setPeerAvatarLoadFailed] = useState(false);
   const [peerAvatarUrl, setPeerAvatarUrl] = useState('');
+  const [peerGender, setPeerGender] = useState<string>('');
+  const [peerIsOnline, setPeerIsOnline] = useState(false);
 
   // ✅ safer param hook
   const {
@@ -90,7 +104,10 @@ export default function Chat() {
   const resolvedPeerAvatarUrl = peerAvatarUrl.length > 0 ? peerAvatarUrl : null;
   const themAvatar = !peerAvatarLoadFailed && resolvedPeerAvatarUrl
     ? { uri: resolvedPeerAvatarUrl }
-    : assets.avatar1 ?? assets.avatar2;
+    : getUserAvatarSource({
+      assets,
+      gender: peerGender,
+    });
 
   useEffect(() => {
     setActiveConversationId(UUID_PATTERN.test(routeConversationId) ? routeConversationId : '');
@@ -105,7 +122,7 @@ export default function Chat() {
   }, [resolvedPeerAvatarUrl]);
 
   useEffect(() => {
-    if (routePeerAvatarUrl || !peerId) {
+    if (!peerId) {
       return;
     }
 
@@ -119,11 +136,13 @@ export default function Chat() {
         }
 
         const avatarUrl = profile.avatar_url?.trim() ?? '';
-        if (avatarUrl) {
+        if (avatarUrl && !routePeerAvatarUrl) {
           setPeerAvatarUrl(avatarUrl);
         }
+        setPeerGender(profile.gender ?? '');
+        setPeerIsOnline(Boolean(profile.is_online));
       } catch {
-        // Keep the static fallback if the peer profile lookup fails.
+        // Keep the existing route values and fallback avatar if the lookup fails.
       }
     })();
 
@@ -206,7 +225,13 @@ export default function Chat() {
       setConnection(data);
       return data;
     } catch (error) {
-      show('error', getConnectionErrorMessage(error));
+      const message = getConnectionErrorMessage(error);
+      if (message === 'Premium is required to send a new message request.') {
+        show('info', message);
+        router.push(ROUTES.SETTINGS_BILLING);
+      } else {
+        show('error', message);
+      }
       return null;
     }
   }, [connection, fetchConnection, peerId, show, userId]);
@@ -253,7 +278,101 @@ export default function Chat() {
         void fetchMessages(true);
       }
     }
+
+    if (lastEvent.type === 'typing_updated') {
+      if (
+        lastEvent.conversation_id === activeConversationId
+        && lastEvent.user_id === peerId
+      ) {
+        setIsPeerTyping(lastEvent.is_typing);
+        if (peerTypingClearTimerRef.current) {
+          clearTimeout(peerTypingClearTimerRef.current);
+        }
+        if (lastEvent.is_typing) {
+          peerTypingClearTimerRef.current = setTimeout(() => {
+            setIsPeerTyping(false);
+          }, 2500);
+        }
+      }
+    }
+
+    if (lastEvent.type === 'presence_updated' && lastEvent.user_id === peerId) {
+      setPeerIsOnline(lastEvent.is_online);
+    }
   }, [activeConversationId, eventTick, fetchBlockStatus, fetchConnection, fetchMessages, lastEvent, peerId]);
+
+  useEffect(() => {
+    if (!isPeerTyping) {
+      setTypingFrame(0);
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setTypingFrame((current) => (current + 1) % 3);
+    }, 350);
+
+    return () => clearInterval(interval);
+  }, [isPeerTyping]);
+
+  const sendTypingState = useCallback(async (isTyping: boolean) => {
+    if (!activeConversationId || connection?.status !== 'accepted') {
+      return;
+    }
+
+    const now = Date.now();
+    const recentlySentTyping = now - lastTypingSignalAtRef.current < 1200;
+
+    if (isTyping && typingSentRef.current && recentlySentTyping) {
+      return;
+    }
+
+    if (!isTyping && !typingSentRef.current) {
+      return;
+    }
+
+    typingSentRef.current = isTyping;
+    lastTypingSignalAtRef.current = now;
+
+    try {
+      await ChatService.updateTyping(activeConversationId, isTyping);
+    } catch {
+      // ignore typing signal failures
+    }
+  }, [activeConversationId, connection?.status]);
+
+  const handleTextChange = useCallback((value: string) => {
+    setText(value);
+
+    if (!activeConversationId || connection?.status !== 'accepted') {
+      return;
+    }
+
+    const hasText = value.trim().length > 0;
+
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+
+    if (!hasText) {
+      void sendTypingState(false);
+      return;
+    }
+
+    void sendTypingState(true);
+    typingStopTimerRef.current = setTimeout(() => {
+      void sendTypingState(false);
+    }, 1500);
+  }, [activeConversationId, connection?.status, sendTypingState]);
+
+  useEffect(() => () => {
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+    }
+    if (peerTypingClearTimerRef.current) {
+      clearTimeout(peerTypingClearTimerRef.current);
+    }
+  }, []);
 
   // ✅ send message (ensures connection exists + writes both records)
   const sendMessage = async () => {
@@ -298,6 +417,11 @@ export default function Chat() {
       return;
     }
 
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    await sendTypingState(false);
     if (activeConnection.status === 'pending' && activeConnection.requester_id === userId) {
       // The new request is visible in chat state and notification center; avoid extra toast noise.
     }
@@ -406,28 +530,58 @@ export default function Chat() {
       <Block
         flex={0}
         row
-        align="flex-start"
+        align="center"
+        justify="space-between"
         color={colors.white}
         paddingHorizontal={sizes.s}
+        paddingVertical={sizes.xs}
       >
         {/* Left side */}
         <Block row align="center">
           <Button row flex={0} justify="center" width={0} onPress={() => router.back()}>
             <Image radius={0} width={10} height={18} color={colors.gray} source={assets.arrow} transform={[{ rotate: '180deg' }]} />
           </Button>
-          <Image
-            source={themAvatar}
-            width={28}
-            height={28}
-            radius={14}
-            marginRight={sizes.s}
-            onError={() => setPeerAvatarLoadFailed(true)}
-          />
-          <Text h5>{name}</Text>
+          <Block flex={0} marginRight={sizes.s}>
+            <Image
+              source={themAvatar}
+              width={36}
+              height={36}
+              radius={18}
+              onError={() => setPeerAvatarLoadFailed(true)}
+            />
+            <Block
+              flex={0}
+              width={10}
+              height={10}
+              radius={5}
+              color={peerIsOnline ? colors.success : colors.gray}
+              style={{
+                position: 'absolute',
+                right: -1,
+                bottom: -1,
+                borderWidth: 2,
+                borderColor: String(colors.white),
+              }}
+            />
+          </Block>
+          <Block flex={0}>
+            <Text h5>{name}</Text>
+            {/*<Block row align="center" marginTop={2}>
+              <Block
+                flex={0}
+                width={6}
+                height={6}
+                radius={3}
+                color={peerIsOnline ? colors.success : colors.gray}
+                marginRight={sizes.xs}
+              />
+              <Text size={11} color={peerIsOnline ? colors.success : colors.gray} semibold>
+                {peerIsOnline ? 'Online' : 'Offline'}
+              </Text>
+            </Block>*/}
+          </Block>
         </Block>
 
-        {/* Right side */}
-        <Block row align="center" />
         {/* FIX: pass peerId to MoreMenu, not my own id */}
         <Button onPress={() => setMenuOpen((prev) => !prev)}>
           <Image radius={0} width={20} height={20} source={assets.more} color={colors.text} />
@@ -494,6 +648,39 @@ export default function Chat() {
       </Block>
 
       {/* input bar */}
+      {isPeerTyping ? (
+        <Block
+          flex={0}
+          marginHorizontal={sizes.m}
+          marginBottom={sizes.xs}
+        >
+          <Block
+            row
+            flex={0}
+            align="center"
+            justify="center"
+            color={colors.card}
+            radius={14}
+            paddingHorizontal={sizes.s}
+            paddingVertical={6}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {[0, 1, 2].map((index) => (
+              <Block
+                key={`typing-dot-${index}`}
+                testID="typing-dot"
+                flex={0}
+                width={6}
+                height={6}
+                radius={3}
+                color={colors.gray}
+                marginRight={index < 2 ? sizes.xs : 0}
+                style={{ opacity: typingFrame === index ? 1 : 0.35 }}
+              />
+            ))}
+          </Block>
+        </Block>
+      ) : null}
       {isBlockedByMe ? (
         <Block
           flex={0}
@@ -520,7 +707,7 @@ export default function Chat() {
             <Input
               placeholder={isPendingAddressee ? "Accept the request to reply…" : "Enter your message"}
               value={text}
-              onChangeText={setText}
+              onChangeText={handleTextChange}
               multiline
               editable={canType && !isPendingAddressee}
             />

@@ -27,6 +27,8 @@ export type NotificationSummary = {
   pending_message_request_count: number;
   photo_request_count: number;
   unread_match_count: number;
+  unread_interest_count: number;
+  unread_billing_count: number;
 };
 
 export type MatchNotificationItem = {

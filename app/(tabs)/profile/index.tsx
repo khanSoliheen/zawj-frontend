@@ -3,11 +3,14 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
+import { TouchableOpacity } from 'react-native';
 
-import { Block, Button, Image, Text } from '@/components';
+import { Block, Image, Text } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuth, useData, useToast } from '@/hooks';
 import UserService, { type ProfileResponse } from '@/services/users';
+import { getUserAvatarSource } from '@/utils/avatar';
+import { toUserMessage } from '@/utils/errors';
 
 function getAge(dob?: string) {
   if (!dob) return '—';
@@ -55,7 +58,6 @@ const Profile = () => {
 
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const loadProfile = useCallback(async () => {
@@ -64,10 +66,8 @@ const Profile = () => {
       const data = await UserService.getMyProfile();
       setProfile(data);
       setAvatarUrl(data?.avatar_url ?? null);
-      setAvatarLoadFailed(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load profile';
-      show('error', message);
+      show('error', toUserMessage(error, 'Failed to load profile'));
     }
   }, [currentUser?.id, show]);
 
@@ -115,12 +115,10 @@ const Profile = () => {
         base64_data: base64,
       });
       setAvatarUrl(response.avatar_url);
-      setAvatarLoadFailed(false);
       setProfile((prev) => (prev ? { ...prev, avatar_url: response.avatar_url } : prev));
       show('success', 'Photo updated');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to upload';
-      show('error', message);
+    } catch (error) {
+      show('error', toUserMessage(error, 'Failed to upload'));
     } finally {
       setUploading(false);
     }
@@ -131,19 +129,16 @@ const Profile = () => {
       setUploading(true);
       await UserService.deleteMyAvatar();
       setAvatarUrl(null);
-      setAvatarLoadFailed(false);
       setProfile((prev) => (prev ? { ...prev, avatar_url: '' } : prev));
       show('success', 'Photo removed');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to remove photo';
-      show('error', message);
+      show('error', toUserMessage(error, 'Failed to remove photo'));
     } finally {
       setUploading(false);
     }
   };
 
   const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
-  const resolvedAvatarUrl = avatarUrl?.trim() ? avatarUrl.trim() : null;
   const age = profile?.dob ? String(getAge(profile.dob)) : '—';
   const location = joinValues(profile?.city, profile?.state, profile?.country) || '—';
   const profession = profile?.designation || profile?.department || profile?.employment_type || '—';
@@ -151,144 +146,104 @@ const Profile = () => {
   const waliDetails = [profile?.wali_name, profile?.wali_relation].filter(Boolean).join(' • ') || '—';
 
   return (
-    <Block color={colors.background} safe marginTop={sizes.md}>
+    <Block color={colors.background} safe flex={1}>
       <Block
         scroll
-        paddingHorizontal={sizes.s}
+        paddingHorizontal={sizes.padding}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: sizes.padding }}
+        contentContainerStyle={{ paddingBottom: sizes.xxl }}
       >
-        <Block flex={0}>
-          {/* Header with Back + Settings */}
-          <Image
-            background
-            resizeMode="cover"
-            padding={sizes.sm}
-            paddingBottom={sizes.l}
-            radius={sizes.cardRadius}
-            source={assets.background}
-          >
-            <Block row justify="space-between" align="center">
-              <Button row flex={0} justify="flex-start" onPress={() => router.back()}>
-                <Image
-                  radius={0}
-                  width={10}
-                  height={18}
-                  color={colors.white}
-                  source={assets.arrow}
-                  transform={[{ rotate: '180deg' }]}
-                />
-                <Text p white marginLeft={sizes.s}>
-                  Profile
-                </Text>
-              </Button>
+        <Block row align="center" justify="space-between" paddingVertical={sizes.s}>
+          <Text h4 semibold>My Profile</Text>
+          <TouchableOpacity accessibilityLabel="Open settings" activeOpacity={0.8} onPress={() => router.push(ROUTES.SETTINGS)}>
+            <Image
+              source={assets.settings}
+              width={20}
+              height={20}
+              color={colors.text}
+              radius={0}
+            />
+          </TouchableOpacity>
+        </Block>
 
-              {/* Settings */}
-              <Button onPress={() => router.push(ROUTES.SETTINGS)}>
-                <Image
-                  source={assets.settings}
-                  width={20}
-                  height={20}
-                  color={colors.white}
-                />
-              </Button>
-            </Block>
+        <Block align="center" paddingVertical={sizes.m}>
+          <TouchableOpacity accessibilityLabel="Edit avatar" activeOpacity={0.85} onPress={pickAvatar} disabled={uploading}>
+            <Image
+              width={112}
+              height={112}
+              radius={56}
+              source={getUserAvatarSource({
+                assets,
+                avatarUrl,
+                gender: profile?.gender,
+              })}
+            />
+          </TouchableOpacity>
+          {uploading ? (
+            <Text p center color={colors.gray} marginTop={sizes.s}>
+              Uploading…
+            </Text>
+          ) : null}
+          {avatarUrl?.trim() ? (
+            <TouchableOpacity
+              accessibilityLabel="Remove avatar"
+              activeOpacity={0.8}
+              onPress={() => void removeAvatar()}
+              disabled={uploading}
+            >
+              <Text p semibold color={colors.primary} marginTop={sizes.s}>
+                Remove photo
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+          <Text h4 semibold center marginTop={sizes.m}>
+            {fullName || 'Anonymous'}
+          </Text>
+          <Text p center color={colors.gray} marginTop={2}>
+            {profile?.designation || profile?.department || 'Profile'}
+          </Text>
+          <Text p center color={colors.gray} marginTop={2}>
+            {subtitle || '—'}
+          </Text>
+        </Block>
 
-            {/* Avatar + Name */}
-            <Block flex={0} align="center" marginTop={sizes.sm}>
-              <Button accessibilityLabel="Edit avatar" onPress={pickAvatar} disabled={uploading}>
-                <Image
-                  width={100}
-                  height={100}
-                  radius={50}
-                  marginBottom={sizes.sm}
-                  source={
-                    resolvedAvatarUrl && !avatarLoadFailed
-                      ? { uri: resolvedAvatarUrl }
-                      : assets.avatar1
-                  }
-                  onError={() => setAvatarLoadFailed(true)}
-                />
-              </Button>
-              {uploading ? (
-                <Text p center color={colors.white} marginBottom={sizes.sm}>
-                  Uploading…
-                </Text>
-              ) : null}
-              {resolvedAvatarUrl ? (
-                <Button
-                  accessibilityLabel="Remove avatar"
-                  onPress={removeAvatar}
-                  disabled={uploading}
-                >
-                  <Text p semibold color={colors.white} marginBottom={sizes.sm}>
-                    Remove photo
-                  </Text>
-                </Button>
-              ) : null}
-              <Text h5 center white>
-                {fullName || 'Anonymous'}
-              </Text>
-              <Text p center white>
-                {profile?.designation || profile?.department || 'Profile'}
-              </Text>
-              <Text p center white>
-                {subtitle || '—'}
-              </Text>
-            </Block>
-          </Image>
-
-          {/* About */}
-          <Block paddingHorizontal={sizes.sm}>
-            <Block row align="center" justify="space-between" marginBottom={sizes.s} marginTop={sizes.sm}>
-              <Text h5 semibold>
-                About me
-              </Text>
-              <Button
-                accessibilityLabel="Edit about me"
-                onPress={() => router.push(ROUTES.SETTINGS_EDIT)}
-              >
-                <Text p semibold color={colors.primary}>
-                  Edit
-                </Text>
-              </Button>
-            </Block>
-            <Text p lineHeight={26}>{profile?.bio || 'No bio added yet.'}</Text>
+        <Block>
+          <Block row align="center" justify="space-between" marginBottom={sizes.s}>
+            <Text h5 semibold>About me</Text>
+            <TouchableOpacity accessibilityLabel="Edit about me" activeOpacity={0.8} onPress={() => router.push(ROUTES.SETTINGS_EDIT)}>
+              <Text p semibold color={colors.primary}>Edit</Text>
+            </TouchableOpacity>
           </Block>
+          <Text p lineHeight={26}>{profile?.bio || 'No bio added yet.'}</Text>
+        </Block>
 
-          {/* Profile Details */}
-          <Block paddingHorizontal={sizes.sm} marginTop={sizes.m}>
-            <Text h5 semibold marginBottom={sizes.s}>
-              Profile Details
-            </Text>
+        <Block marginTop={sizes.l}>
+          <Text h5 semibold marginBottom={sizes.s}>Profile Details</Text>
+          <Text p><Text semibold>Age:</Text> {age}</Text>
+          <Text p><Text semibold>Location:</Text> {location}</Text>
+          <Text p><Text semibold>Marital status:</Text> {valueOrFallback(profile?.marital_status)}</Text>
+          <Text p><Text semibold>Education:</Text> {valueOrFallback(profile?.education)}</Text>
+          <Text p><Text semibold>Employment:</Text> {valueOrFallback(profile?.employment_type)}</Text>
+          <Text p><Text semibold>Profession:</Text> {profession}</Text>
+          <Text p><Text semibold>Department:</Text> {valueOrFallback(profile?.department)}</Text>
+          <Text p><Text semibold>Children:</Text> {childrenText(profile?.children_count, profile?.children_details)}</Text>
+        </Block>
 
-            <Text p><Text semibold>Age:</Text> {age}</Text>
-            <Text p><Text semibold>Location:</Text> {location}</Text>
-            <Text p><Text semibold>Marital status:</Text> {valueOrFallback(profile?.marital_status)}</Text>
-            <Text p><Text semibold>Education:</Text> {valueOrFallback(profile?.education)}</Text>
-            <Text p><Text semibold>Employment:</Text> {valueOrFallback(profile?.employment_type)}</Text>
-            <Text p><Text semibold>Profession:</Text> {profession}</Text>
-            <Text p><Text semibold>Department:</Text> {valueOrFallback(profile?.department)}</Text>
-            <Text p><Text semibold>Children:</Text> {childrenText(profile?.children_count, profile?.children_details)}</Text>
+        <Block marginTop={sizes.l}>
+          <Text h5 semibold marginBottom={sizes.s}>Deen Practices</Text>
+          <Text p><Text semibold>Religion:</Text> {valueOrFallback(profile?.religion)}</Text>
+          <Text p><Text semibold>Prayer:</Text> {valueOrFallback(profile?.prayer_regularity)}</Text>
+          <Text p><Text semibold>Qur’an:</Text> {valueOrFallback(profile?.quran_level)}</Text>
+          <Text p>
+            <Text semibold>{profile?.gender === 'Female' ? 'Hijab' : 'Beard'}:</Text> {valueOrFallback(profile?.hijab_or_beard)}
+          </Text>
+        </Block>
 
-            <Text p semibold marginTop={sizes.s}>Deen Practices:</Text>
-            <Text p><Text semibold>Religion:</Text> {valueOrFallback(profile?.religion)}</Text>
-            <Text p><Text semibold>Prayer:</Text> {valueOrFallback(profile?.prayer_regularity)}</Text>
-            <Text p><Text semibold>Qur’an:</Text> {valueOrFallback(profile?.quran_level)}</Text>
-            <Text p>
-              <Text semibold>{profile?.gender === 'Female' ? 'Hijab' : 'Beard'}:</Text> {valueOrFallback(profile?.hijab_or_beard)}
-            </Text>
-
-            <Text p marginTop={sizes.s}>
-              <Text semibold>Wali:</Text> {waliDetails}
-            </Text>
-            <Text p>
-              <Text semibold>Visibility:</Text> {valueOrFallback(profile?.visibility)}
-            </Text>
-            <Text p>
-              <Text semibold>Email status:</Text> {profile?.email_verified ? 'Verified' : 'Unverified'}
-            </Text>
-          </Block>
+        <Block marginTop={sizes.l}>
+          <Text h5 semibold marginBottom={sizes.s}>Family & Account</Text>
+          <Text p><Text semibold>Wali:</Text> {waliDetails}</Text>
+          <Text p><Text semibold>Visibility:</Text> {valueOrFallback(profile?.visibility)}</Text>
+          <Text p><Text semibold>Email status:</Text> {profile?.email_verified ? 'Verified' : 'Unverified'}</Text>
         </Block>
       </Block>
     </Block>

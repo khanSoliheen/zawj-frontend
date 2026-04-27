@@ -9,6 +9,7 @@ import { z } from "zod";
 import { Block, Button, Text, Image, Input } from "@/components";
 import { useData, useToast } from "@/hooks";
 import UserService from "@/services/users";
+import { getUserAvatarSource } from "@/utils/avatar";
 
 const schema = z.object({
   full_name: z.string().trim().min(2, "Enter your name"),
@@ -24,6 +25,7 @@ export default function EditProfile() {
   const { colors, sizes, assets } = theme;
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileGender, setProfileGender] = useState<string | null>(null);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -51,6 +53,7 @@ export default function EditProfile() {
           profession: profile.designation ?? "",
         });
         setAvatarUrl(profile.avatar_url ?? null);
+        setProfileGender(profile.gender ?? null);
         setAvatarLoadFailed(false);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to load profile";
@@ -199,7 +202,7 @@ export default function EditProfile() {
             source={
               resolvedAvatarUrl && !avatarLoadFailed
                 ? { uri: resolvedAvatarUrl }
-                : assets.avatar1
+                : getUserAvatarSource({ assets, gender: profileGender })
             }
             onError={() => setAvatarLoadFailed(true)}
           />

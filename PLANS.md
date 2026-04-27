@@ -55,12 +55,67 @@ What is changing and why?
 
 ## Current High-Risk Areas
 
+- `app/(tabs)/chat/**` and any premium gating around first-message initiation
+- `app/screens/**` upgrade, billing status, and notification entry points
+- `src/hooks/userContext.tsx` auth hydration plus subscription-state hydration
+- `src/services/**` payment, billing status, and referral client contracts
 - `app/_layout.tsx` boot flow and redirect behavior
 - `src/hooks/userContext.tsx` auth hydration
 - `src/services/session.ts` and `src/utils/supabase.ts`
 - `src/store/registration.tsx` plus `app/(auth)/register/**`
 - `src/constants/routes.ts` and `src/utils/navigation.ts`
 - `app/(tabs)/**` and `app/screens/**` protected flows
+
+## Active Plan: Premium Billing And Referral Rollout
+
+### Purpose
+Add quarterly premium billing at Rs 500, gate new first-message requests behind premium, preserve existing chats after expiry, and stage a referral program that awards configurable premium bonus days after a successful paid referral.
+
+### Constraints
+- Must not break existing browse, receive-request, accept/decline, or existing-chat flows.
+- Existing accepted chats must remain usable after expiry or downgrade.
+- Premium gating must be enforced by backend truth, not client-only checks.
+- Notification UX must stay coherent: bell is persistent history, push is additive.
+- Referral reward days must be configurable from backend environment, not hardcoded in the client.
+
+### Repo Context
+- Relevant routes:
+  - `app/(tabs)/users/index.tsx`
+  - `app/(tabs)/users/[id].tsx`
+  - `app/(tabs)/chat/[id].tsx`
+  - new upgrade/billing screens under `app/screens/**`
+- Relevant shared modules:
+  - `src/hooks/userContext.tsx`
+  - `src/services/auth.ts`
+  - `src/services/api.ts`
+  - new billing/referral service modules in `src/services/**`
+- Relevant tests:
+  - `test/tabs/user-detail-screen.test.tsx`
+  - `test/chat/chat-screen.test.tsx`
+  - new billing/referral screen and gating tests
+
+### Plan
+1. Add subscription and referral state contracts to frontend service/types without changing runtime behavior.
+2. Add upgrade and billing-status UI shells wired to backend status endpoints.
+3. Gate only new first-message requests behind subscription status; keep browse, receiving requests, accepting requests, and existing chats working.
+4. Add notification entry points for billing-related states only after backend contracts are stable.
+5. Add regression tests for free vs premium gating, expiry/grace handling, and referral surfaces.
+6. Validate affected route flows and remove any stale backlog items changed by this rollout.
+
+### Progress
+- [ ] step 1
+- [ ] step 2
+- [ ] step 3
+- [ ] step 4
+- [ ] step 5
+- [ ] step 6
+
+### Decision Log
+- Premium is required for sending new first-message requests.
+- Existing accepted chats remain usable after expiry.
+- Browse, receive requests, and accept/decline remain available to free users.
+- Grace period should be supported, with downgrade after expiry/grace only affecting premium actions.
+- Referral rewards should grant premium bonus days, with the day count controlled by backend env/config.
 
 ## Frontend Audit Backlog
 

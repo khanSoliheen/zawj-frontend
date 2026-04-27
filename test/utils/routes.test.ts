@@ -7,6 +7,7 @@ describe('routes', () => {
     expect(ROUTES.LOGIN).toBe('/login');
     expect(ROUTES.USERS).toBe('/users');
     expect(ROUTES.SETTINGS).toBe('/screens/settings');
+    expect(ROUTES.SETTINGS_BILLING).toBe('/screens/settings/billing');
     expect(ROUTES.SUPPORT).toBe('/screens/support');
   });
 

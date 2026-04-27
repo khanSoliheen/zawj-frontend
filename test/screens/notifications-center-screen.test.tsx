@@ -67,7 +67,9 @@ describe('NotificationsCenter screen', () => {
       unread_chat_count: 1,
       pending_message_request_count: 1,
       unread_match_count: 1,
+      unread_interest_count: 1,
       photo_request_count: 2,
+      unread_billing_count: 1,
       photo_requests: [
         {
           viewer_id: 'viewer-1',
@@ -93,6 +95,23 @@ describe('NotificationsCenter screen', () => {
           full_name: 'Maryam Khan',
           avatar_url: null,
           created_at: '2026-04-23T12:00:00Z',
+        },
+      ],
+      interests: [
+        {
+          id: 'interest-1',
+          user_id: 'user-5',
+          full_name: 'Zoya Noor',
+          avatar_url: null,
+          created_at: '2026-04-23T08:00:00Z',
+        },
+      ],
+      billing_updates: [
+        {
+          id: 'billing-1',
+          title: 'Premium activated',
+          body: 'Your quarterly premium is active. You can now send new message requests.',
+          created_at: '2026-04-23T12:30:00Z',
         },
       ],
       unread_messages: [
@@ -131,6 +150,11 @@ describe('NotificationsCenter screen', () => {
     expect(textContent).toContain('New matches');
     expect(textContent).toContain('Maryam Khan');
     expect(textContent).toContain('You have a new match');
+    expect(textContent).toContain('Interests');
+    expect(textContent).toContain('Zoya Noor');
+    expect(textContent).toContain('Expressed interest in your profile');
+    expect(textContent).toContain('Billing updates');
+    expect(textContent).toContain('Premium activated');
     expect(textContent).toContain('New messages');
     expect(textContent).toContain('Fatima Noor');
     expect(textContent).toContain('Assalamu alaikum');

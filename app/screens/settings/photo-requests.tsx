@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Block, Button, Image, Text } from '@/components';
 import { useData, useToast } from '@/hooks';
 import SettingsService, { type PhotoAccessRequestRow } from '@/services/settings';
+import { getUserAvatarSource } from '@/utils/avatar';
 
 const formatRequestedAt = (value: string) => {
   const requestedAt = new Date(value);
@@ -146,7 +147,7 @@ export default function PhotoRequestsScreen() {
             >
               <Block row align="center">
                 <Image
-                  source={request.avatar_url ? { uri: request.avatar_url } : assets.avatar1}
+                  source={getUserAvatarSource({ assets, avatarUrl: request.avatar_url, gender: request.gender })}
                   width={48}
                   height={48}
                   radius={24}

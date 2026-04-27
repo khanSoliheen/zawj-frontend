@@ -23,8 +23,8 @@ const mockTheme = {
     cardRadius: 12,
   },
   assets: {
-    avatar1: 1,
-    avatar2: 2,
+    avatarMale: 1,
+    avatarFemale: 2,
   },
 };
 
@@ -48,6 +48,35 @@ jest.mock('@/hooks', () => ({
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: () => {},
 }));
+
+jest.mock('react-native', () => {
+  const React = require('react');
+
+  return {
+    StatusBar: {
+      setBarStyle: jest.fn(),
+    },
+    ActivityIndicator: (props: Record<string, unknown>) => React.createElement('MockActivityIndicator', props),
+    FlatList: ({
+      data,
+      renderItem,
+      ListEmptyComponent,
+      ...props
+    }: Record<string, unknown> & {
+      data?: unknown[];
+      renderItem?: (params: { item: unknown; index: number }) => React.ReactNode;
+      ListEmptyComponent?: React.ReactNode;
+    }) => {
+      const children = Array.isArray(data) && data.length > 0
+        ? data.map((item, index) => React.createElement(React.Fragment, { key: index }, renderItem?.({ item, index })))
+        : ListEmptyComponent ?? null;
+
+      return React.createElement('MockFlatList', props, children);
+    },
+    TouchableOpacity: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) =>
+      React.createElement('MockTouchableOpacity', props, children),
+  };
+});
 
 jest.mock('@/services/chat', () => ({
   __esModule: true,
@@ -81,10 +110,13 @@ describe('ChatList screen', () => {
         peer_id: 'peer-1',
         peer_first_name: 'Fatima',
         peer_last_name: 'Ali',
+        peer_gender: 'Female',
         last_message: 'Latest message',
         last_message_at: '2026-01-10T10:00:00.000Z',
         peer_avatar_url: null,
+        peer_is_online: true,
         unread: true,
+        status: 'accepted',
       },
     ]);
   });
@@ -100,10 +132,15 @@ describe('ChatList screen', () => {
     });
     await act(async () => {});
 
-    const pressable = renderer!.root.find((node) => typeof node.props.onPress === 'function');
+    const pressable = renderer!.root.findAll((node) =>
+      String(node.type) === 'MockTouchableOpacity' && typeof node.props.onPress === 'function',
+    ).at(-1);
+
+    expect(pressable).toBeDefined();
+    expect(typeof pressable?.props.onPress).toBe('function');
 
     act(() => {
-      pressable.props.onPress();
+      pressable!.props.onPress();
     });
 
     expect(router.push).toHaveBeenCalledWith({

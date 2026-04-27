@@ -9,6 +9,8 @@ export type ProfileResponse = {
   avatar_locked?: boolean;
   photo_access_status?: 'approved' | 'pending' | 'rejected' | 'hidden' | null;
   photo_access_notice?: string | null;
+  is_online?: boolean;
+  interested?: boolean;
 } & RegistrationData;
 
 export type UpdateProfilePayload = {
@@ -55,6 +57,8 @@ export type UserCard = {
   quran_level: string;
   hijab_or_beard: string;
   avatar_url?: string | null;
+  is_online?: boolean;
+  interested?: boolean;
 };
 
 class UserService {
@@ -97,6 +101,14 @@ class UserService {
 
   static async getUser(userId: string) {
     return ApiService.get<ProfileResponse>(`/users/${userId}`);
+  }
+
+  static async expressInterest(userId: string) {
+    return ApiService.post<{ interested: boolean }>(`/users/${userId}/interest`);
+  }
+
+  static async removeInterest(userId: string) {
+    return ApiService.delete<{ interested: boolean }>(`/users/${userId}/interest`);
   }
 }
 
