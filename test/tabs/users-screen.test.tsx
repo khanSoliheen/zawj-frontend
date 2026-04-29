@@ -158,7 +158,6 @@ describe('Users screen', () => {
     });
 
     const texts = renderer!.root.findAll((node) => String(node.type) === 'MockText').map((node) => node.children.join(' '));
-    expect(texts).toContain('Online');
     expect(texts.join(' | ')).toContain('Single');
     expect(texts.join(' | ')).toContain('Regularly');
 

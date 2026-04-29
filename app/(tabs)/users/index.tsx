@@ -264,20 +264,6 @@ export default function Home() {
             </Block>
 
             <Block flex={1}>
-              {/*<Block row align="center" marginBottom={sizes.xs}>
-                <Block
-                  flex={0}
-                  width={8}
-                  height={8}
-                  radius={4}
-                  color={item.is_online ? colors.success : colors.gray}
-                  marginRight={sizes.xs}
-                />
-                <Text size={12} color={item.is_online ? colors.success : colors.gray} semibold>
-                  {item.is_online ? 'Online' : 'Offline'}
-                </Text>
-              </Block>*/}
-
               <Text h6 semibold>{nameLine}</Text>
               {detailLine ? (
                 <Text size={12} color={colors.gray} marginTop={2}>

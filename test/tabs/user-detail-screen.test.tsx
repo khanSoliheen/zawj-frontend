@@ -206,7 +206,6 @@ describe('User detail screen', () => {
 
     expect(texts).toContain('Amina Khan');
     expect(texts).toContain('Female, 27 years');
-    expect(texts).toContain('Online');
     expect(texts).toContain('About me');
     expect(textContent).toContain('Kerala');
     expect(textContent).toContain('BSc');

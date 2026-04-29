@@ -227,20 +227,6 @@ const Profile = () => {
           <Text p center color={colors.gray} marginTop={2}>
             {loading ? 'Loading profile…' : subtitle}
           </Text>
-          {/*<Block row align="center" marginTop={sizes.xs}>
-            <Block
-              flex={0}
-              width={8}
-              height={8}
-              radius={4}
-              color={userDetails?.is_online ? colors.success : colors.gray}
-              marginRight={sizes.xs}
-            />
-            <Text size={12} color={userDetails?.is_online ? colors.success : colors.gray} semibold>
-              {userDetails?.is_online ? 'Online' : 'Offline'}
-            </Text>
-          </Block>*/}
-
           <Block row marginTop={sizes.m}>
             <TouchableOpacity activeOpacity={0.8} onPress={handleSendMessage} disabled={loading || !userDetails}>
               <Block
