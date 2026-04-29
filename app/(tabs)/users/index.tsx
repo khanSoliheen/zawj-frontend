@@ -357,10 +357,11 @@ export default function Home() {
         <Block row flex={0} align="center" justify="space-between" paddingTop={sizes.s} paddingBottom={sizes.s}>
           <Image
             source={assets.logo}
-            width={110}
-            height={32}
+            width={60}
+            height={80}
             resizeMode="contain"
             radius={0}
+            color={colors.text}
           />
           <NotificationBellButton />
         </Block>
