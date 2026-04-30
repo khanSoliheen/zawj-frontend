@@ -162,6 +162,7 @@ describe('Chat screen', () => {
       requester_id: 'peer-1',
       addressee_id: 'me',
       status: 'pending',
+      blocked: false,
     });
     mockGetMessages.mockResolvedValue([]);
     mockAcceptConnection.mockResolvedValue({ message: 'request accepted' });
@@ -171,6 +172,7 @@ describe('Chat screen', () => {
       requester_id: 'me',
       addressee_id: 'peer-1',
       status: 'accepted',
+      blocked: false,
     });
     mockEnsureConversation.mockResolvedValue({
       id: 'conversation-created',
@@ -310,6 +312,33 @@ describe('Chat screen', () => {
       .map((node) => node.children.join(' '));
 
     expect(textContent).toContain('You blocked this user.');
+    expect(textContent).toContain('Previous messages stay visible, but you can’t send new ones.');
+    expect(renderer!.root.findAll((node) => String(node.type) === 'MockInput')).toHaveLength(0);
+
+    unmountRenderer(renderer);
+  });
+
+  it('shows a blocked-state banner when the peer blocked the current user', async () => {
+    mockGetBlockStatus.mockResolvedValue({ blocked: false });
+    mockGetConnection.mockResolvedValue({
+      id: 'connection-1',
+      requester_id: 'peer-1',
+      addressee_id: 'me',
+      status: 'accepted',
+      blocked: true,
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const textContent = renderer!.root
+      .findAll((node) => String(node.type) === 'MockText')
+      .map((node) => node.children.join(' '));
+
+    expect(textContent).toContain('This user blocked you.');
     expect(textContent).toContain('Previous messages stay visible, but you can’t send new ones.');
     expect(renderer!.root.findAll((node) => String(node.type) === 'MockInput')).toHaveLength(0);
 

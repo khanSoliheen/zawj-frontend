@@ -17,6 +17,15 @@ const mockTheme = {
   },
 };
 
+const mockSummary = {
+  unread_chat_count: 1,
+  pending_message_request_count: 1,
+  photo_request_count: 2,
+  unread_match_count: 1,
+  unread_interest_count: 0,
+  unread_billing_count: 0,
+};
+
 jest.mock('@/hooks', () => ({
   useData: () => ({
     theme: mockTheme,
@@ -30,14 +39,7 @@ jest.mock('@/hooks', () => ({
     },
   }),
   useRealtime: () => ({
-    summary: {
-      unread_chat_count: 1,
-      pending_message_request_count: 1,
-      photo_request_count: 2,
-      unread_match_count: 1,
-      unread_interest_count: 0,
-      unread_billing_count: 0,
-    },
+    summary: mockSummary,
   }),
 }));
 
@@ -77,6 +79,11 @@ const getMountedRenderer = (renderer: TestRenderer.ReactTestRenderer | null) => 
 };
 
 describe('Tabs layout', () => {
+  beforeEach(() => {
+    mockSummary.unread_chat_count = 1;
+    mockSummary.pending_message_request_count = 1;
+  });
+
   it('registers the visible and hidden tab screens', async () => {
     let renderer: TestRenderer.ReactTestRenderer | null = null;
 
@@ -104,5 +111,39 @@ describe('Tabs layout', () => {
 
     expect(chatIcon).toBeTruthy();
     expect(tabsNode.props.screenOptions.headerShown).toBe(false);
+  });
+
+  it('shows the chat badge when there are unread chats or pending requests', async () => {
+    mockSummary.unread_chat_count = 0;
+    mockSummary.pending_message_request_count = 1;
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<TabsLayout />);
+    });
+
+    const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
+    const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
+    const children = React.Children.toArray(chatIcon?.props?.children);
+    const badge = children.find((child) => React.isValidElement(child) && child.props.width === 8 && child.props.height === 8);
+
+    expect(badge).toBeTruthy();
+  });
+
+  it('hides the chat badge when there are no unread chats or requests', async () => {
+    mockSummary.unread_chat_count = 0;
+    mockSummary.pending_message_request_count = 0;
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<TabsLayout />);
+    });
+
+    const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
+    const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
+    const children = React.Children.toArray(chatIcon?.props?.children);
+    const badge = children.find((child) => React.isValidElement(child) && child.props.width === 8 && child.props.height === 8);
+
+    expect(badge).toBeUndefined();
   });
 });

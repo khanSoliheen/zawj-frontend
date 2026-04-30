@@ -235,7 +235,7 @@ const ChatList = () => {
               {item.unread ? (
                 <Block
                   flex={0}
-                  width={36}
+                  width={48}
                   height={20}
                   radius={10}
                   color={colors.primary}
@@ -244,7 +244,7 @@ const ChatList = () => {
                   justify="center"
                   paddingHorizontal={sizes.s}
                 >
-                  <Text size={sizes.s} color={colors.white} semibold>
+                  <Text size={10} color={colors.white} semibold>
                     New
                   </Text>
                 </Block>

@@ -85,7 +85,7 @@ export default function Chat() {
   const [peerAvatarUrl, setPeerAvatarUrl] = useState('');
   const [peerGender, setPeerGender] = useState<string>('');
   const [peerIsOnline, setPeerIsOnline] = useState(false);
-  const isConversationBlocked = isBlockedByMe || connection?.status === 'blocked';
+  const isConversationBlocked = isBlockedByMe || connection?.status === 'blocked' || connection?.blocked;
   const isConversationDeclined = connection?.status === 'declined';
 
   // ✅ safer param hook
@@ -104,12 +104,13 @@ export default function Chat() {
   );
 
   const resolvedPeerAvatarUrl = peerAvatarUrl.length > 0 ? peerAvatarUrl : null;
+  const fallbackPeerAvatar = getUserAvatarSource({
+    assets,
+    gender: peerGender,
+  });
   const themAvatar = !peerAvatarLoadFailed && resolvedPeerAvatarUrl
     ? { uri: resolvedPeerAvatarUrl }
-    : getUserAvatarSource({
-      assets,
-      gender: peerGender,
-    });
+    : fallbackPeerAvatar;
 
   useEffect(() => {
     setActiveConversationId(UUID_PATTERN.test(routeConversationId) ? routeConversationId : '');
@@ -384,7 +385,7 @@ export default function Chat() {
     const activeConnection = await ensureConnection();
     if (!activeConnection) return;
 
-    if (activeConnection.status === 'blocked' || activeConnection.status === 'declined') {
+    if (activeConnection.blocked || activeConnection.status === 'blocked' || activeConnection.status === 'declined') {
       return show('error', 'You cannot send messages to this user.');
     }
 

@@ -11,7 +11,7 @@ export default function TabsLayout() {
   const { currentUser } = useAuth();
   const { summary } = useRealtime();
   const { colors, assets } = theme;
-  const hasUnreadChats = summary.unread_chat_count > 0;
+  const hasUnreadChats = summary.unread_chat_count > 0 || summary.pending_message_request_count > 0;
   const profileAvatar = getUserAvatarSource({
     assets,
     avatarUrl: typeof currentUser?.userMetadata?.avatar_url === 'string' ? currentUser.userMetadata.avatar_url : null,

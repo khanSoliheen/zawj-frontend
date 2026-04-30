@@ -21,6 +21,7 @@ export type Connection = {
   addressee_id: string;
   status: 'pending' | 'accepted' | 'blocked' | 'declined';
   created_at?: string;
+  blocked?: boolean;
 };
 
 export type MessageRow = {
