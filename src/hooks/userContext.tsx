@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
 import { registerDeviceForPush, unregisterDevicePushToken } from '@/hooks/usePushNotifications';
 import BillingService, { type BillingStatus } from '@/services/billing';
@@ -12,7 +12,7 @@ const AuthContext = createContext<{
   currentUser: SessionUser | null;
   billingStatus: BillingStatus | null;
   isLoading: boolean;
-  setCurrentUser: (user: SessionUser | null) => void;
+  setCurrentUser: Dispatch<SetStateAction<SessionUser | null>>;
   refreshBillingStatus: () => Promise<void>;
   login: (credentials: SignInCredentials) => Promise<SessionUser | null>;
   logout: (scope?: SignOutScope) => Promise<void>;

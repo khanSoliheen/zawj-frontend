@@ -7,7 +7,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Block, Button, Text, Image, Input } from "@/components";
-import { useData, useToast } from "@/hooks";
+import { useAuth, useData, useToast } from "@/hooks";
 import UserService from "@/services/users";
 import { getUserAvatarSource } from "@/utils/avatar";
 
@@ -22,6 +22,7 @@ type FormValues = z.infer<typeof schema>;
 export default function EditProfile() {
   const { theme } = useData();
   const { show } = useToast();
+  const { setCurrentUser } = useAuth();
   const { colors, sizes, assets } = theme;
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -96,6 +97,13 @@ export default function EditProfile() {
 
       setAvatarUrl(response.avatar_url);
       setAvatarLoadFailed(false);
+      setCurrentUser((prev) => prev ? {
+        ...prev,
+        userMetadata: {
+          ...prev.userMetadata,
+          avatar_url: response.avatar_url,
+        },
+      } : prev);
       show("success", "Photo updated");
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to upload';

@@ -347,7 +347,7 @@ export default function Home() {
             height={80}
             resizeMode="contain"
             radius={0}
-            color={colors.text}
+            color={colors.primary}
           />
           <NotificationBellButton />
         </Block>

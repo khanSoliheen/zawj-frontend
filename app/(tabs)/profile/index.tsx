@@ -52,7 +52,7 @@ const childrenText = (count?: string | null, details?: string | null) => {
 
 const Profile = () => {
   const { theme } = useData();
-  const { currentUser } = useAuth();
+  const { currentUser, setCurrentUser } = useAuth();
   const { show } = useToast();
   const { assets, colors, sizes } = theme;
 
@@ -116,6 +116,13 @@ const Profile = () => {
       });
       setAvatarUrl(response.avatar_url);
       setProfile((prev) => (prev ? { ...prev, avatar_url: response.avatar_url } : prev));
+      setCurrentUser((prev) => prev ? {
+        ...prev,
+        userMetadata: {
+          ...prev.userMetadata,
+          avatar_url: response.avatar_url,
+        },
+      } : prev);
       show('success', 'Photo updated');
     } catch (error) {
       show('error', toUserMessage(error, 'Failed to upload'));
@@ -130,6 +137,13 @@ const Profile = () => {
       await UserService.deleteMyAvatar();
       setAvatarUrl(null);
       setProfile((prev) => (prev ? { ...prev, avatar_url: '' } : prev));
+      setCurrentUser((prev) => prev ? {
+        ...prev,
+        userMetadata: {
+          ...prev.userMetadata,
+          avatar_url: '',
+        },
+      } : prev);
       show('success', 'Photo removed');
     } catch (error) {
       show('error', toUserMessage(error, 'Failed to remove photo'));

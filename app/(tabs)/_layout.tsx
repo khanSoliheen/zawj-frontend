@@ -17,7 +17,6 @@ export default function TabsLayout() {
     avatarUrl: typeof currentUser?.userMetadata?.avatar_url === 'string' ? currentUser.userMetadata.avatar_url : null,
     gender: typeof currentUser?.userMetadata?.gender === 'string' ? currentUser.userMetadata.gender : null,
   });
-
   return (
     <Tabs
       screenOptions={{
@@ -98,8 +97,8 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => (
             <Image
               source={profileAvatar}
-              width={24}
-              height={24}
+              width={25}
+              height={25}
               radius={12}
               style={{
                 borderWidth: focused ? 2 : 1,

@@ -13,6 +13,7 @@ const mockShow = jest.fn();
 const mockCurrentUser = {
   id: 'me',
 };
+const mockSetCurrentUser = jest.fn();
 const mockTheme = {
   assets: {
     settings: 1,
@@ -59,6 +60,7 @@ jest.mock('@/hooks', () => ({
   }),
   useAuth: () => ({
     currentUser: mockCurrentUser,
+    setCurrentUser: mockSetCurrentUser,
   }),
 }));
 
