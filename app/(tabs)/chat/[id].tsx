@@ -85,6 +85,8 @@ export default function Chat() {
   const [peerAvatarUrl, setPeerAvatarUrl] = useState('');
   const [peerGender, setPeerGender] = useState<string>('');
   const [peerIsOnline, setPeerIsOnline] = useState(false);
+  const isConversationBlocked = isBlockedByMe || connection?.status === 'blocked';
+  const isConversationDeclined = connection?.status === 'declined';
 
   // ✅ safer param hook
   const {
@@ -681,7 +683,7 @@ export default function Chat() {
           </Block>
         </Block>
       ) : null}
-      {isBlockedByMe ? (
+      {isConversationBlocked ? (
         <Block
           flex={0}
           color={colors.card}
@@ -691,7 +693,26 @@ export default function Chat() {
           marginHorizontal={sizes.m}
           marginBottom={sizes.md}
         >
-          <Text p semibold color={colors.gray}>You blocked this user.</Text>
+          <Text p semibold color={colors.gray}>
+            {isBlockedByMe ? 'You blocked this user.' : 'This user blocked you.'}
+          </Text>
+          <Text size={12} color={colors.gray} marginTop={2}>
+            Previous messages stay visible, but you can’t send new ones.
+          </Text>
+        </Block>
+      ) : isConversationDeclined ? (
+        <Block
+          flex={0}
+          color={colors.card}
+          radius={sizes.cardRadius || 16}
+          paddingHorizontal={sizes.m}
+          paddingVertical={sizes.s}
+          marginHorizontal={sizes.m}
+          marginBottom={sizes.md}
+        >
+          <Text p semibold color={colors.gray}>
+            {connection?.requester_id === userId ? 'You declined this request.' : 'This request was declined.'}
+          </Text>
           <Text size={12} color={colors.gray} marginTop={2}>
             Previous messages stay visible, but you can’t send new ones.
           </Text>
@@ -713,12 +734,12 @@ export default function Chat() {
             />
           </Block>
           <Button
-            gradient={gradients.dark}
+            gradient={gradients.secondary}
             style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
             onPress={sendMessage}
             disabled={!canType || isPendingAddressee}
           >
-            <Image source={assets.arrow} width={16} height={16} color={colors.white} transform={[{ rotate: '315deg' }]} />
+            <Image source={assets.arrow} width={16} height={16} color={colors.text} transform={[{ rotate: '315deg' }]} />
           </Button>
         </Block>
       )}

@@ -12,6 +12,7 @@ export type ConversationSummary = {
   last_message_at?: string | null;
   unread: boolean;
   status: 'pending' | 'accepted' | 'blocked' | 'declined';
+  blocked?: boolean;
 };
 
 export type Connection = {

@@ -44,7 +44,6 @@ const Profile = () => {
         }
 
         setUserDetails(data);
-        console.log(data);
       } catch (error) {
         if (isMounted) {
           show('error', toUserMessage(error, 'Failed to load profile'));

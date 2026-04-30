@@ -30,18 +30,19 @@ export default function BlockUserScreen() {
     [currentUserId, targetId]
   );
 
-  // Load target profile (optional context)
+  // Load target profile for display only; blocking should still work if this fails.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       if (!targetId) return;
-      if (!cancelled) {
-        try {
-          const data = await UserService.getUser(targetId);
+      try {
+        const data = await UserService.getUser(targetId);
+        if (!cancelled) {
           setProfile(data);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Failed to load profile";
-          show("error", message);
+        }
+      } catch {
+        if (!cancelled) {
+          setProfile(null);
         }
       }
     })();
