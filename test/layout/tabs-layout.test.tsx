@@ -1,4 +1,4 @@
-/* global jest, describe, it, expect */
+/* global jest, describe, it, expect, beforeEach */
 
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
@@ -125,7 +125,14 @@ describe('Tabs layout', () => {
     const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
     const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
     const children = React.Children.toArray(chatIcon?.props?.children);
-    const badge = children.find((child) => React.isValidElement(child) && child.props.width === 8 && child.props.height === 8);
+    const badge = children.find((child) => {
+      if (!React.isValidElement(child)) {
+        return false;
+      }
+
+      const props = child.props as { width?: number; height?: number };
+      return props.width === 8 && props.height === 8;
+    });
 
     expect(badge).toBeTruthy();
   });
@@ -142,7 +149,14 @@ describe('Tabs layout', () => {
     const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
     const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
     const children = React.Children.toArray(chatIcon?.props?.children);
-    const badge = children.find((child) => React.isValidElement(child) && child.props.width === 8 && child.props.height === 8);
+    const badge = children.find((child) => {
+      if (!React.isValidElement(child)) {
+        return false;
+      }
+
+      const props = child.props as { width?: number; height?: number };
+      return props.width === 8 && props.height === 8;
+    });
 
     expect(badge).toBeUndefined();
   });
