@@ -6,6 +6,8 @@ This directory is the Expo Router React Native client for Zawj. Treat `frontend/
 
 Stay inside the Expo-managed workflow unless the task explicitly calls for native changes.
 
+For refactors, route-tree changes, state changes, or multi-step architecture work, write or update a plan in `PLANS.md` first and then execute in small verified steps.
+
 ## Stack
 
 - Expo SDK 55
@@ -85,6 +87,14 @@ Run these from `frontend/`.
 - Do not call auth APIs at boot that require an existing authenticated session.
 - Avoid duplicate state systems for the same concern.
 - Reuse the existing provider stack in `app/_layout.tsx`: `DataProvider`, `AuthProvider`, `ToastProvider`, then `ThemeProvider`.
+
+## Refactor Rules
+
+- Split refactors into small verified steps instead of one large rewrite.
+- Preserve existing behavior unless the task explicitly changes it.
+- Add or update tests for every behavior change made during the refactor.
+- Remove dead or redundant code as part of the refactor.
+- Prefer files under 200 lines when practical; allow up to 250 lines when a larger cohesive module is clearer than splitting it early.
 
 ## State Management Rules
 

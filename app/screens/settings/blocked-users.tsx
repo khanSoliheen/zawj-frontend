@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Block, Button, Text, Image } from "@/components";
 import { useData, useToast } from "@/hooks";
 import SettingsService, { type BlockedUserRow } from "@/services/settings";
-import { getUserAvatarSource } from "@/utils/avatar";
 import { toUserMessage } from "@/utils/errors";
 
 const formatBlockedAt = (value?: string) => {
@@ -79,7 +78,7 @@ export default function BlockedUsers() {
           radius={24}
           width={48}
           height={48}
-          source={getUserAvatarSource({ assets, avatarUrl: row.avatar_url, gender: row.gender })}
+          source={row.avatar_url ? { uri: row.avatar_url } : assets.avatar1}
         />
         <Block marginLeft={sizes.s} flex={1}>
           <Text p semibold>{row.full_name || "User"}</Text>
@@ -125,7 +124,7 @@ export default function BlockedUsers() {
           <Text p color={colors.gray}>Loading blocked users…</Text>
         </Block>
       ) : rows.length === 0 ? (
-        <Block color={colors.card} radius={sizes.cardRadius || 16} padding={sizes.m}>
+        <Block flex={0} color={colors.card} radius={sizes.cardRadius || 16} padding={sizes.m}>
           <Text p semibold>No blocked users</Text>
           <Text p color={colors.gray} marginTop={sizes.xs}>
             People you block will show up here so you can review or unblock them later.

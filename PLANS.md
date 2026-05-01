@@ -2,6 +2,15 @@
 
 Use this file for cross-cutting, risky, or multi-step frontend changes. Keep the plan short, concrete, and tied to the actual files involved.
 
+## Refactor Checklist
+Use this checklist when a task is a refactor, cleanup, or restructuring effort:
+- break the work into small verified steps
+- preserve existing behavior unless the task explicitly changes it
+- add or update tests for each changed behavior
+- remove dead or redundant code as part of the same change
+- keep route and shared-module boundaries intact
+- prefer smaller cohesive files when practical
+
 ## Use A Plan First For
 
 - auth or session changes
