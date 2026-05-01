@@ -14,6 +14,8 @@ const mockTheme = {
     chat: 2,
     extras: 3,
     profile: 4,
+    avatarMale: 5,
+    avatarFemale: 6,
   },
 };
 
@@ -25,6 +27,7 @@ const mockSummary = {
   unread_interest_count: 0,
   unread_billing_count: 0,
 };
+const mockGetMyProfile = jest.fn();
 
 jest.mock('@/hooks', () => ({
   useData: () => ({
@@ -32,8 +35,9 @@ jest.mock('@/hooks', () => ({
   }),
   useAuth: () => ({
     currentUser: {
+      id: 'me',
       userMetadata: {
-        avatar_url: null,
+        avatar_url: 'https://zawj.s3.ap-south-1.amazonaws.com/avatars/me.jpg',
         gender: 'Male',
       },
     },
@@ -41,6 +45,13 @@ jest.mock('@/hooks', () => ({
   useRealtime: () => ({
     summary: mockSummary,
   }),
+}));
+
+jest.mock('@/services/users', () => ({
+  __esModule: true,
+  default: {
+    getMyProfile: (...args: unknown[]) => mockGetMyProfile(...args),
+  },
 }));
 
 jest.mock('@/components', () => {
@@ -51,6 +62,10 @@ jest.mock('@/components', () => {
     Text: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) => React.createElement('MockText', props, children),
   };
 });
+
+jest.mock('react-native', () => ({
+  Image: (props: Record<string, unknown>) => require('react').createElement('MockRNImage', props),
+}));
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -82,6 +97,10 @@ describe('Tabs layout', () => {
   beforeEach(() => {
     mockSummary.unread_chat_count = 1;
     mockSummary.pending_message_request_count = 1;
+    mockGetMyProfile.mockResolvedValue({
+      avatar_url: 'https://zawj.s3.ap-south-1.amazonaws.com/avatars/me.jpg',
+      gender: 'Male',
+    });
   });
 
   it('registers the visible and hidden tab screens', async () => {
@@ -121,6 +140,7 @@ describe('Tabs layout', () => {
     await act(async () => {
       renderer = TestRenderer.create(<TabsLayout />);
     });
+    await act(async () => {});
 
     const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
     const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });
@@ -137,6 +157,30 @@ describe('Tabs layout', () => {
     expect(badge).toBeTruthy();
   });
 
+  it('uses the uploaded avatar uri for the profile tab icon', async () => {
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<TabsLayout />);
+    });
+    await act(async () => {});
+
+    const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
+    let profileIconRenderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      profileIconRenderer = TestRenderer.create(screens[3]?.props.options?.tabBarIcon?.({ focused: false }));
+    });
+    await act(async () => {});
+
+    const profileImage = getMountedRenderer(profileIconRenderer).root.find((node) => String(node.type) === 'MockImage');
+
+    expect(profileImage.props.source).toEqual({
+      uri: 'https://zawj.s3.ap-south-1.amazonaws.com/avatars/me.jpg',
+    });
+    expect(profileImage.props.width).toBe(25);
+    expect(profileImage.props.height).toBe(25);
+  });
+
   it('hides the chat badge when there are no unread chats or requests', async () => {
     mockSummary.unread_chat_count = 0;
     mockSummary.pending_message_request_count = 0;
@@ -145,6 +189,7 @@ describe('Tabs layout', () => {
     await act(async () => {
       renderer = TestRenderer.create(<TabsLayout />);
     });
+    await act(async () => {});
 
     const screens = getMountedRenderer(renderer).root.findAll((node) => String(node.type) === 'MockTabsScreen');
     const chatIcon = screens[1]?.props.options?.tabBarIcon?.({ color: '#111111' });

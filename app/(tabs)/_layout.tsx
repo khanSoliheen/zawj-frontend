@@ -1,22 +1,73 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Block, Image } from '@/components';
 import { useAuth, useData, useRealtime } from '@/hooks';
+import UserService from '@/services/users';
 import { getUserAvatarSource } from '@/utils/avatar';
+
+const ProfileTabIcon = ({ focused }: { focused: boolean }) => {
+  const { theme } = useData();
+  const { currentUser } = useAuth();
+  const { colors, assets } = theme;
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!currentUser?.id) {
+      setAvatarUrl(null);
+      return undefined;
+    }
+
+    void (async () => {
+      try {
+        const profile = await UserService.getMyProfile();
+        if (!isMounted) {
+          return;
+        }
+
+        setAvatarUrl(profile.avatar_url ?? null);
+      } catch {
+        if (isMounted) {
+          setAvatarUrl(null);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id]);
+
+  const avatar = getUserAvatarSource({
+    assets,
+    avatarUrl,
+    gender: typeof currentUser?.userMetadata?.gender === 'string' ? currentUser.userMetadata.gender : null,
+  });
+
+  return (
+    <Image
+      key={avatarUrl ?? 'profile-avatar-fallback'}
+      source={avatar}
+      width={25}
+      height={25}
+      radius={12}
+      style={{
+        borderWidth: focused ? 2 : 1,
+        borderColor: String(focused ? colors.primary : colors.gray),
+      }}
+    />
+  );
+};
 
 export default function TabsLayout() {
   const { theme } = useData();
-  const { currentUser } = useAuth();
   const { summary } = useRealtime();
   const { colors, assets } = theme;
+
   const hasUnreadChats = summary.unread_chat_count > 0 || summary.pending_message_request_count > 0;
-  const profileAvatar = getUserAvatarSource({
-    assets,
-    avatarUrl: typeof currentUser?.userMetadata?.avatar_url === 'string' ? currentUser.userMetadata.avatar_url : null,
-    gender: typeof currentUser?.userMetadata?.gender === 'string' ? currentUser.userMetadata.gender : null,
-  });
   return (
     <Tabs
       screenOptions={{
@@ -94,18 +145,7 @@ export default function TabsLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused }) => (
-            <Image
-              source={profileAvatar}
-              width={25}
-              height={25}
-              radius={12}
-              style={{
-                borderWidth: focused ? 2 : 1,
-                borderColor: String(focused ? colors.primary : colors.gray),
-              }}
-            />
-          ),
+          tabBarIcon: ({ focused }) => <ProfileTabIcon focused={focused} />,
         }}
       />
       <Tabs.Screen
