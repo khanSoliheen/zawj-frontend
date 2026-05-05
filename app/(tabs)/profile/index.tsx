@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 
-import { Block, Image, Text } from '@/components';
+import { Block, Image, Input, Text } from '@/components';
 import { ROUTES } from '@/constants/routes';
 import { useAuth, useData, useToast } from '@/hooks';
 import UserService, { type ProfileResponse } from '@/services/users';
@@ -59,6 +59,9 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState('');
+  const [savingBio, setSavingBio] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!currentUser?.id) return;
@@ -66,6 +69,8 @@ const Profile = () => {
       const data = await UserService.getMyProfile();
       setProfile(data);
       setAvatarUrl(data?.avatar_url ?? null);
+      setBioDraft(data?.bio ?? '');
+      setEditingBio(false);
     } catch (error) {
       show('error', toUserMessage(error, 'Failed to load profile'));
     }
@@ -152,6 +157,34 @@ const Profile = () => {
     }
   };
 
+  const startEditingBio = () => {
+    setBioDraft(profile?.bio ?? '');
+    setEditingBio(true);
+  };
+
+  const cancelEditingBio = () => {
+    setBioDraft(profile?.bio ?? '');
+    setEditingBio(false);
+  };
+
+  const saveBio = async () => {
+    if (savingBio) {
+      return;
+    }
+
+    setSavingBio(true);
+    try {
+      await UserService.updateMyProfile({ bio: bioDraft });
+      setProfile((prev) => (prev ? { ...prev, bio: bioDraft } : prev));
+      setEditingBio(false);
+      show('success', 'Bio updated');
+    } catch (error) {
+      show('error', toUserMessage(error, 'Failed to update bio'));
+    } finally {
+      setSavingBio(false);
+    }
+  };
+
   const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
   const age = profile?.dob ? String(getAge(profile.dob)) : '—';
   const location = joinValues(profile?.city, profile?.state, profile?.country) || '—';
@@ -224,11 +257,41 @@ const Profile = () => {
         <Block>
           <Block row align="center" justify="space-between" marginBottom={sizes.s}>
             <Text h5 semibold>About me</Text>
-            <TouchableOpacity accessibilityLabel="Edit about me" activeOpacity={0.8} onPress={() => router.push(ROUTES.SETTINGS_EDIT)}>
-              <Text p semibold color={colors.primary}>Edit</Text>
-            </TouchableOpacity>
+            {!editingBio ? (
+              <TouchableOpacity accessibilityLabel="Edit about me" activeOpacity={0.8} onPress={startEditingBio}>
+                <Text p semibold color={colors.primary}>Edit bio</Text>
+              </TouchableOpacity>
+            ) : null}
           </Block>
-          <Text p lineHeight={26}>{profile?.bio || 'No bio added yet.'}</Text>
+          {editingBio ? (
+            <Block>
+              <Input
+                value={bioDraft}
+                onChangeText={setBioDraft}
+                multiline
+                numberOfLines={5}
+                placeholder="Tell people about yourself"
+                marginBottom={sizes.s}
+              />
+              <Block row align="center">
+                <TouchableOpacity activeOpacity={0.8} onPress={saveBio} disabled={savingBio}>
+                  <Text p semibold color={colors.primary}>
+                    {savingBio ? 'Saving…' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={cancelEditingBio}
+                  disabled={savingBio}
+                  style={{ marginLeft: sizes.m }}
+                >
+                  <Text p semibold color={colors.gray}>Cancel</Text>
+                </TouchableOpacity>
+              </Block>
+            </Block>
+          ) : (
+            <Text p lineHeight={26}>{profile?.bio || 'No bio added yet.'}</Text>
+          )}
         </Block>
 
         <Block marginTop={sizes.l}>

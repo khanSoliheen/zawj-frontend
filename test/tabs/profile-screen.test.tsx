@@ -92,6 +92,7 @@ jest.mock('@/components', () => {
   return {
     Block: ({ children, ...props }: MockComponentProps) => React.createElement('MockBlock', props, children),
     Button: ({ children, ...props }: MockComponentProps) => React.createElement('MockButton', props, children),
+    Input: (props: Record<string, unknown>) => React.createElement('MockInput', props),
     Image: ({ children, ...props }: MockComponentProps) => React.createElement('MockImage', props, children),
     Text: ({ children, ...props }: MockComponentProps) => React.createElement('MockText', props, children),
   };
@@ -109,6 +110,9 @@ const findButtonByText = (root: TestRenderer.ReactTestInstance, label: string) =
   root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find((buttonNode) =>
     buttonNode.findAll((childNode) => String(childNode.type) === 'MockText' && childNode.children.join('') === label).length > 0,
   );
+
+const findInputByPlaceholder = (root: TestRenderer.ReactTestInstance, placeholder: string) =>
+  root.findAll((node) => String(node.type) === 'MockInput').find((node) => node.props.placeholder === placeholder);
 
 const findButtonByImageSource = (root: TestRenderer.ReactTestInstance, source: number) =>
   root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find((buttonNode) =>
@@ -165,7 +169,7 @@ describe('Profile screen', () => {
     expect(router.push).toHaveBeenCalledWith(ROUTES.SETTINGS);
   });
 
-  it('navigates to edit profile from the about me action', async () => {
+  it('shows an inline bio editor from the about me action', async () => {
     let renderer: TestRenderer.ReactTestRenderer | null = null;
 
     await act(async () => {
@@ -177,8 +181,9 @@ describe('Profile screen', () => {
       findButtonByA11yLabel(renderer!.root, 'Edit about me')?.props.onPress();
     });
 
-    expect(router.push).toHaveBeenCalledWith(ROUTES.SETTINGS_EDIT);
-    expect(findButtonByText(renderer!.root, 'Edit')).toBeDefined();
+    expect(findInputByPlaceholder(renderer!.root, 'Tell people about yourself')).toBeDefined();
+    expect(findButtonByText(renderer!.root, 'Save')).toBeDefined();
+    expect(findButtonByText(renderer!.root, 'Cancel')).toBeDefined();
   });
 
   it('shows a permission error when photo access is denied', async () => {
