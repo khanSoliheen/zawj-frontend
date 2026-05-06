@@ -6,6 +6,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 
 const mockShow = jest.fn();
 const mockChangePassword = jest.fn();
+const mockSignOut = jest.fn();
 const mockTheme = {
   colors: {
     background: '#ffffff',
@@ -39,6 +40,13 @@ jest.mock('@/services/auth', () => ({
   },
 }));
 
+jest.mock('@/services/session', () => ({
+  __esModule: true,
+  default: {
+    signOut: (...args: unknown[]) => mockSignOut(...args),
+  },
+}));
+
 jest.mock('@/components', () => {
   const React = require('react');
   type MockComponentProps = Record<string, unknown> & { children?: unknown };
@@ -69,6 +77,7 @@ describe('ChangePassword screen', () => {
 
   it('updates the password and returns on success', async () => {
     mockChangePassword.mockResolvedValue({ message: 'password updated' });
+    mockSignOut.mockResolvedValue(undefined);
 
     let renderer: TestRenderer.ReactTestRenderer | null = null;
     await act(async () => {
@@ -76,6 +85,7 @@ describe('ChangePassword screen', () => {
     });
 
     act(() => {
+      findInputByPlaceholder(renderer!.root, 'Current password')?.props.onChangeText('oldpass123');
       findInputByPlaceholder(renderer!.root, 'New password')?.props.onChangeText('newpass123');
       findInputByPlaceholder(renderer!.root, 'Confirm new password')?.props.onChangeText('newpass123');
     });
@@ -84,9 +94,10 @@ describe('ChangePassword screen', () => {
       await findButtonByLabel(renderer!.root, 'Change Password')?.props.onPress();
     });
 
-    expect(mockChangePassword).toHaveBeenCalledWith('newpass123');
-    expect(mockShow).toHaveBeenCalledWith('success', 'Password updated');
-    expect(router.back).toHaveBeenCalled();
+    expect(mockChangePassword).toHaveBeenCalledWith('oldpass123', 'newpass123');
+    expect(mockSignOut).toHaveBeenCalledWith('local');
+    expect(mockShow).toHaveBeenCalledWith('success', 'Password updated. Please sign in again.');
+    expect(router.replace).toHaveBeenCalledWith('/login');
   });
 
   it('shows an error when the backend update fails', async () => {
@@ -98,6 +109,7 @@ describe('ChangePassword screen', () => {
     });
 
     act(() => {
+      findInputByPlaceholder(renderer!.root, 'Current password')?.props.onChangeText('oldpass123');
       findInputByPlaceholder(renderer!.root, 'New password')?.props.onChangeText('newpass123');
       findInputByPlaceholder(renderer!.root, 'Confirm new password')?.props.onChangeText('newpass123');
     });
@@ -108,5 +120,6 @@ describe('ChangePassword screen', () => {
 
     expect(mockShow).toHaveBeenCalledWith('error', 'Update failed');
     expect(router.back).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });

@@ -7,8 +7,9 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Block, Button, Text, Image, Input } from "@/components";
-import { useData, useToast } from "@/hooks";
+import { useAuth, useData, useToast } from "@/hooks";
 import UserService from "@/services/users";
+import { getUserAvatarSource } from "@/utils/avatar";
 
 const schema = z.object({
   full_name: z.string().trim().min(2, "Enter your name"),
@@ -21,9 +22,11 @@ type FormValues = z.infer<typeof schema>;
 export default function EditProfile() {
   const { theme } = useData();
   const { show } = useToast();
+  const { setCurrentUser } = useAuth();
   const { colors, sizes, assets } = theme;
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileGender, setProfileGender] = useState<string | null>(null);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -51,6 +54,7 @@ export default function EditProfile() {
           profession: profile.designation ?? "",
         });
         setAvatarUrl(profile.avatar_url ?? null);
+        setProfileGender(profile.gender ?? null);
         setAvatarLoadFailed(false);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to load profile";
@@ -93,6 +97,13 @@ export default function EditProfile() {
 
       setAvatarUrl(response.avatar_url);
       setAvatarLoadFailed(false);
+      setCurrentUser((prev) => prev ? {
+        ...prev,
+        userMetadata: {
+          ...prev.userMetadata,
+          avatar_url: response.avatar_url,
+        },
+      } : prev);
       show("success", "Photo updated");
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to upload';
@@ -190,33 +201,60 @@ export default function EditProfile() {
       </Block>
 
       {/* Avatar */}
-      <Block row align="center" marginBottom={sizes.m}>
-        <Button accessibilityLabel="Edit avatar" onPress={pickAvatar} disabled={uploading}>
-          <Image
-            radius={32}
-            width={64}
-            height={64}
-            source={
-              resolvedAvatarUrl && !avatarLoadFailed
-                ? { uri: resolvedAvatarUrl }
-                : assets.avatar1
-            }
-            onError={() => setAvatarLoadFailed(true)}
-          />
+      <Block flex={0} align="center" marginBottom={sizes.m}>
+        <Button
+          accessibilityLabel="Edit avatar"
+          onPress={pickAvatar}
+          disabled={uploading}
+          style={{ padding: 0, alignSelf: 'center' }}
+        >
+          <Block
+            flex={0}
+            align="center"
+            justify="center"
+            radius={44}
+            width={88}
+            height={88}
+            color={colors.card}
+            style={{
+              borderWidth: 1,
+              borderColor: String(colors.card),
+              overflow: 'hidden',
+            }}
+          >
+            <Image
+              radius={44}
+              width={88}
+              height={88}
+              source={
+                resolvedAvatarUrl && !avatarLoadFailed
+                  ? { uri: resolvedAvatarUrl }
+                  : getUserAvatarSource({ assets, gender: profileGender })
+              }
+              onError={() => setAvatarLoadFailed(true)}
+            />
+          </Block>
         </Button>
+
         {uploading ? (
-          <Text p semibold color={colors.link} marginLeft={sizes.s}>
+          <Text p semibold color={colors.link} marginTop={sizes.xs}>
             Uploading…
           </Text>
         ) : null}
+
+        {resolvedAvatarUrl ? (
+          <Button
+            accessibilityLabel="Remove avatar"
+            onPress={removeAvatar}
+            disabled={uploading}
+            style={{ paddingHorizontal: 0, paddingVertical: 0, marginTop: sizes.xs }}
+          >
+            <Text p semibold color={colors.link}>
+              Remove photo
+            </Text>
+          </Button>
+        ) : null}
       </Block>
-      {resolvedAvatarUrl ? (
-        <Button accessibilityLabel="Remove avatar" onPress={removeAvatar} disabled={uploading}>
-          <Text p semibold color={colors.link} marginBottom={sizes.m}>
-            Remove photo
-          </Text>
-        </Button>
-      ) : null}
 
       {/* Form */}
       <Field name="full_name" placeholder="Full name" />

@@ -17,8 +17,9 @@ class AuthService {
     });
   }
 
-  static async changePassword(password: string) {
-    return ApiService.post<{ message: string }, { password: string }>('/auth/password', {
+  static async changePassword(currentPassword: string, password: string) {
+    return ApiService.post<{ message: string }, { current_password: string; password: string }>('/auth/password', {
+      current_password: currentPassword,
       password,
     });
   }

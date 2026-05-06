@@ -13,27 +13,29 @@ const mockShow = jest.fn();
 const mockCurrentUser = {
   id: 'me',
 };
+const mockSetCurrentUser = jest.fn();
 const mockTheme = {
   assets: {
-    background: 1,
-    arrow: 2,
-    settings: 3,
-    avatar1: 4,
+    settings: 1,
+    avatar1: 2,
+    avatarMale: 3,
+    avatarFemale: 4,
   },
   colors: {
     background: '#ffffff',
-    white: '#ffffff',
     primary: '#111111',
+    gray: '#808080',
+    text: '#111111',
+    white: '#ffffff',
     blurTint: 'light',
   },
   sizes: {
-    md: 20,
     padding: 16,
     s: 8,
     sm: 12,
     m: 16,
     l: 24,
-    cardRadius: 16,
+    xxl: 32,
   },
 };
 
@@ -58,6 +60,7 @@ jest.mock('@/hooks', () => ({
   }),
   useAuth: () => ({
     currentUser: mockCurrentUser,
+    setCurrentUser: mockSetCurrentUser,
   }),
 }));
 
@@ -69,6 +72,8 @@ jest.mock('react-native', () => ({
   Platform: {
     OS: 'ios',
   },
+  TouchableOpacity: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) =>
+    require('react').createElement('MockTouchableOpacity', props, children),
 }));
 
 jest.mock('@/services/users', () => ({
@@ -87,6 +92,7 @@ jest.mock('@/components', () => {
   return {
     Block: ({ children, ...props }: MockComponentProps) => React.createElement('MockBlock', props, children),
     Button: ({ children, ...props }: MockComponentProps) => React.createElement('MockButton', props, children),
+    Input: (props: Record<string, unknown>) => React.createElement('MockInput', props),
     Image: ({ children, ...props }: MockComponentProps) => React.createElement('MockImage', props, children),
     Text: ({ children, ...props }: MockComponentProps) => React.createElement('MockText', props, children),
   };
@@ -96,17 +102,20 @@ import ProfileScreen from '@/(tabs)/profile';
 import { ROUTES } from '@/constants/routes';
 
 const findButtonByA11yLabel = (root: TestRenderer.ReactTestInstance, label: string) =>
-  root.findAll((node) => String(node.type) === 'MockButton').find(
+  root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find(
     (buttonNode) => buttonNode.props.accessibilityLabel === label,
   );
 
 const findButtonByText = (root: TestRenderer.ReactTestInstance, label: string) =>
-  root.findAll((node) => String(node.type) === 'MockButton').find((buttonNode) =>
+  root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find((buttonNode) =>
     buttonNode.findAll((childNode) => String(childNode.type) === 'MockText' && childNode.children.join('') === label).length > 0,
   );
 
+const findInputByPlaceholder = (root: TestRenderer.ReactTestInstance, placeholder: string) =>
+  root.findAll((node) => String(node.type) === 'MockInput').find((node) => node.props.placeholder === placeholder);
+
 const findButtonByImageSource = (root: TestRenderer.ReactTestInstance, source: number) =>
-  root.findAll((node) => String(node.type) === 'MockButton').find((buttonNode) =>
+  root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find((buttonNode) =>
     buttonNode.findAll((childNode) => String(childNode.type) === 'MockImage' && childNode.props.source === source).length > 0,
   );
 
@@ -160,7 +169,7 @@ describe('Profile screen', () => {
     expect(router.push).toHaveBeenCalledWith(ROUTES.SETTINGS);
   });
 
-  it('navigates to edit profile from the about me action', async () => {
+  it('shows an inline bio editor from the about me action', async () => {
     let renderer: TestRenderer.ReactTestRenderer | null = null;
 
     await act(async () => {
@@ -172,8 +181,9 @@ describe('Profile screen', () => {
       findButtonByA11yLabel(renderer!.root, 'Edit about me')?.props.onPress();
     });
 
-    expect(router.push).toHaveBeenCalledWith(ROUTES.SETTINGS_EDIT);
-    expect(findButtonByText(renderer!.root, 'Edit')).toBeDefined();
+    expect(findInputByPlaceholder(renderer!.root, 'Tell people about yourself')).toBeDefined();
+    expect(findButtonByText(renderer!.root, 'Save')).toBeDefined();
+    expect(findButtonByText(renderer!.root, 'Cancel')).toBeDefined();
   });
 
   it('shows a permission error when photo access is denied', async () => {

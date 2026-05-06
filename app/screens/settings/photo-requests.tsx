@@ -4,6 +4,43 @@ import React, { useEffect, useState } from 'react';
 import { Block, Button, Image, Text } from '@/components';
 import { useData, useToast } from '@/hooks';
 import SettingsService, { type PhotoAccessRequestRow } from '@/services/settings';
+import { getUserAvatarSource } from '@/utils/avatar';
+
+const formatRequestedAt = (value: string) => {
+  const requestedAt = new Date(value);
+  const diffMs = Date.now() - requestedAt.getTime();
+
+  if (Number.isNaN(requestedAt.getTime()) || diffMs < 0) {
+    return 'recently';
+  }
+
+  const diffMinutes = Math.floor(diffMs / 60_000);
+
+  if (diffMinutes < 1) {
+    return 'just now';
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  return requestedAt.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
 export default function PhotoRequestsScreen() {
   const { theme } = useData();
@@ -80,35 +117,72 @@ export default function PhotoRequestsScreen() {
 
       <Block scroll showsVerticalScrollIndicator={false} paddingHorizontal={sizes.md}>
         {loading ? (
-          <Text p>Loading requests…</Text>
+          <Block
+            color={colors.card}
+            radius={sizes.cardRadius || 16}
+            padding={sizes.m}
+          >
+            <Text p>Loading requests…</Text>
+          </Block>
         ) : requests.length === 0 ? (
-          <Text p color={colors.gray}>No pending photo requests.</Text>
+          <Block
+            color={colors.card}
+            radius={sizes.cardRadius || 16}
+            padding={sizes.m}
+          >
+            <Text p semibold>No pending photo requests</Text>
+            <Text p color={colors.gray} marginTop={sizes.xs}>
+              New photo access requests will show up here.
+            </Text>
+          </Block>
         ) : (
           requests.map((request) => (
-            <Block key={request.viewer_id} row align="center" justify="space-between" paddingVertical={sizes.sm}>
-              <Block row flex={0} align="center">
+            <Block
+              key={request.viewer_id}
+              color={colors.card}
+              radius={sizes.cardRadius || 16}
+              padding={sizes.m}
+              marginBottom={sizes.s}
+              shadow
+            >
+              <Block row align="center">
                 <Image
-                  source={request.avatar_url ? { uri: request.avatar_url } : assets.avatar1}
-                  width={40}
-                  height={40}
-                  radius={20}
+                  source={getUserAvatarSource({ assets, avatarUrl: request.avatar_url, gender: request.gender })}
+                  width={48}
+                  height={48}
+                  radius={24}
                   marginRight={sizes.s}
                 />
-                <Block flex={0}>
+                <Block flex={1}>
                   <Text p semibold>{request.full_name || 'User'}</Text>
-                  <Text size={12} color={colors.gray}>Requested access to view your photo</Text>
+                  <Text size={12} color={colors.gray} marginTop={2}>
+                    Requested access to view your photo
+                  </Text>
+                  <Text size={12} color={colors.gray} marginTop={2}>
+                    {formatRequestedAt(request.requested_at)}
+                  </Text>
                 </Block>
               </Block>
 
-              <Block row flex={0} align="center">
+              <Block row flex={0} marginTop={sizes.m}>
                 <Button
+                  flex={1}
+                  color={colors.primary}
+                  shadow={false}
+                  paddingVertical={sizes.s}
                   onPress={() => void handleDecision(request.viewer_id, 'approve')}
                   disabled={busyViewerId === request.viewer_id}
-                  marginRight={sizes.s}
                 >
-                  <Text p semibold color={colors.primary}>Approve</Text>
+                  <Text p semibold color={colors.white}>
+                    {busyViewerId === request.viewer_id ? 'Working…' : 'Approve'}
+                  </Text>
                 </Button>
                 <Button
+                  flex={1}
+                  outlined={colors.gray as string}
+                  shadow={false}
+                  paddingVertical={sizes.s}
+                  marginLeft={sizes.s}
                   onPress={() => void handleDecision(request.viewer_id, 'reject')}
                   disabled={busyViewerId === request.viewer_id}
                 >

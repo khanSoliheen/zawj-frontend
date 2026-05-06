@@ -3,9 +3,26 @@ import ApiService from '@/services/api';
 export type NotificationPrefs = {
   push: boolean;
   messages: boolean;
+  matches: boolean;
   marketing: boolean;
   sounds: boolean;
 };
+
+export type BillingNotificationItem = {
+  id: string,
+  title: string,
+  body: string,
+  created_at: string,
+}
+
+export type InterestNotificationItem = {
+  id: string,
+  user_id?: string,
+  full_name: string,
+  avatar_url?: string,
+  gender?: string,
+  created_at: string,
+}
 
 export type VisibilityPrefs = {
   discoverable: boolean;
@@ -15,10 +32,64 @@ export type VisibilityPrefs = {
 };
 
 export type PhotoAccessRequestRow = {
+  gender: string | null | undefined;
   viewer_id: string;
   full_name?: string | null;
   avatar_url?: string | null;
   requested_at: string;
+};
+
+export type NotificationSummary = {
+  unread_chat_count: number;
+  pending_message_request_count: number;
+  photo_request_count: number;
+  unread_match_count: number;
+  unread_interest_count: number;
+  unread_billing_count: number;
+};
+
+export type MatchNotificationItem = {
+  gender: string | null | undefined;
+  id: string;
+  user_id?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  created_at: string;
+};
+
+export type MessageRequestNotificationItem = {
+  gender: string | null | undefined;
+  connection_id: string;
+  user_id: string;
+  conversation_id?: string | null;
+  full_name: string;
+  avatar_url?: string | null;
+  created_at: string;
+};
+
+export type UnreadMessageNotificationItem = {
+  gender: string | null | undefined;
+  conversation_id: string;
+  user_id: string;
+  full_name: string;
+  avatar_url?: string | null;
+  message_preview: string;
+  created_at: string;
+};
+
+export type NotificationCenterResponse = {
+  unread_interest_count: number;
+  unread_billing_count: number;
+  interests: never[];
+  billing_updates: BillingNotificationItem[];
+  unread_chat_count: number;
+  pending_message_request_count: number;
+  unread_match_count: number;
+  photo_request_count: number;
+  photo_requests: PhotoAccessRequestRow[];
+  message_requests: MessageRequestNotificationItem[];
+  matches: MatchNotificationItem[];
+  unread_messages: UnreadMessageNotificationItem[];
 };
 
 export type MatchPreferences = {
@@ -34,6 +105,7 @@ export type MatchPreferences = {
 };
 
 export type BlockedUserRow = {
+  gender: string | null | undefined;
   blocked_user_id: string;
   created_at?: string;
   full_name?: string | null;
@@ -47,7 +119,17 @@ export type BlockStatusResponse = {
 export type SessionInfoResponse = {
   user_email: string;
   created_at: string;
+  last_seen_at: string;
   expires_at: string;
+};
+
+export type SessionListItem = {
+  id: string;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+  user_agent?: string | null;
+  is_current: boolean;
 };
 
 export type ReportPayload = {
@@ -63,6 +145,12 @@ export type SupportPayload = {
   email: string;
   app_version?: string;
   platform?: string;
+};
+
+export type PushTokenPayload = {
+  token: string;
+  platform: string;
+  device_name?: string | null;
 };
 
 class SettingsService {
@@ -92,6 +180,18 @@ class SettingsService {
 
   static async getPhotoRequests() {
     return ApiService.get<PhotoAccessRequestRow[]>('/settings/photo-requests');
+  }
+
+  static async getNotificationSummary() {
+    return ApiService.get<NotificationSummary>('/settings/notification-summary');
+  }
+
+  static async getNotificationCenter() {
+    return ApiService.get<NotificationCenterResponse>('/settings/notification-center');
+  }
+
+  static async markNotificationCenterSeen() {
+    return ApiService.post<{ message: string }>('/settings/notification-center/seen');
   }
 
   static async requestPhotoAccess(userId: string) {
@@ -128,6 +228,22 @@ class SettingsService {
 
   static async getSessionInfo() {
     return ApiService.get<SessionInfoResponse>('/settings/session');
+  }
+
+  static async getSessions() {
+    return ApiService.get<SessionListItem[]>('/settings/sessions');
+  }
+
+  static async revokeSession(sessionId: string) {
+    return ApiService.delete<{ message: string }>(`/settings/session/${encodeURIComponent(sessionId)}`);
+  }
+
+  static async registerPushToken(payload: PushTokenPayload) {
+    return ApiService.post<{ message: string }, PushTokenPayload>('/settings/push-token', payload);
+  }
+
+  static async deletePushToken(token: string) {
+    return ApiService.delete<{ message: string }>(`/settings/push-token/${encodeURIComponent(token)}`);
   }
 
   static async logoutOtherSessions() {

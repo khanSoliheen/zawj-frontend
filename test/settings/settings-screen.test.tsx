@@ -118,4 +118,22 @@ describe('Settings screen', () => {
 
     expect(mockHandleIsDark).toHaveBeenCalledWith(true);
   });
+
+  it('navigates to premium billing from settings', async () => {
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<Settings />);
+    });
+
+    const billingButton = findButtonByLabel(renderer!.root, 'Premium & Billing');
+
+    expect(billingButton).toBeDefined();
+
+    act(() => {
+      billingButton?.props.onPress();
+    });
+
+    expect(mockedRouter.push).toHaveBeenCalledWith(ROUTES.SETTINGS_BILLING);
+  });
 });

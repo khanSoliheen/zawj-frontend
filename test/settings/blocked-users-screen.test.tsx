@@ -9,6 +9,7 @@ const mockUnblockUser = jest.fn();
 const mockTheme = {
   colors: {
     background: '#ffffff',
+    card: '#f6f6f6',
     link: '#0a84ff',
     gray: '#808080',
     danger: '#ff453a',
@@ -16,8 +17,11 @@ const mockTheme = {
   sizes: {
     padding: 16,
     s: 8,
+    xs: 4,
     sm: 12,
     md: 20,
+    m: 16,
+    cardRadius: 16,
   },
   assets: {
     arrow: 1,
@@ -83,6 +87,12 @@ describe('BlockedUsers screen', () => {
       renderer = TestRenderer.create(<BlockedUsers />);
     });
     await act(async () => {});
+
+    const textContent = renderer!.root
+      .findAll((node) => String(node.type) === 'MockText')
+      .map((node) => node.children.join(' '));
+
+    expect(textContent).toContain('Blocked User');
 
     await act(async () => {
       await findButtonByLabel(renderer!.root, 'Unblock')?.props.onPress();

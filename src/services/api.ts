@@ -52,6 +52,7 @@ const resolveBaseUrl = () => {
 };
 
 const BASE_URL = resolveBaseUrl();
+const WS_BASE_URL = BASE_URL.replace(/^http/i, 'ws');
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
@@ -155,5 +156,5 @@ class ApiService {
   }
 }
 
-export { API_TOKEN_KEY, BASE_URL };
+export { API_TOKEN_KEY, BASE_URL, WS_BASE_URL };
 export default ApiService;

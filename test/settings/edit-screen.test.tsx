@@ -5,6 +5,7 @@ const mockUpdateMyProfile = jest.fn();
 const mockUploadMyAvatar = jest.fn();
 const mockDeleteMyAvatar = jest.fn();
 const mockShow = jest.fn();
+const mockSetCurrentUser = jest.fn();
 const mockTheme = {
   colors: {
     background: '#ffffff',
@@ -29,6 +30,9 @@ jest.mock('@/hooks', () => ({
   }),
   useData: () => ({
     theme: mockTheme,
+  }),
+  useAuth: () => ({
+    setCurrentUser: mockSetCurrentUser,
   }),
 }));
 

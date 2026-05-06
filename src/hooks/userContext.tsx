@@ -1,5 +1,7 @@
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 
+import { registerDeviceForPush, unregisterDevicePushToken } from '@/hooks/usePushNotifications';
+import BillingService, { type BillingStatus } from '@/services/billing';
 import SessionService, {
   type SessionUser,
   type SignInCredentials,
@@ -8,21 +10,41 @@ import SessionService, {
 
 const AuthContext = createContext<{
   currentUser: SessionUser | null;
+  billingStatus: BillingStatus | null;
   isLoading: boolean;
-  setCurrentUser: (user: SessionUser | null) => void;
+  setCurrentUser: Dispatch<SetStateAction<SessionUser | null>>;
+  refreshBillingStatus: () => Promise<void>;
   login: (credentials: SignInCredentials) => Promise<SessionUser | null>;
   logout: (scope?: SignOutScope) => Promise<void>;
 }>({
   currentUser: null,
+  billingStatus: null,
   isLoading: true,
-  setCurrentUser: () => {},
+  setCurrentUser: () => { },
+  refreshBillingStatus: async () => { },
   login: async () => null,
-  logout: async () => {},
+  logout: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pushToken, setPushToken] = useState<string | null>(null);
+
+  const refreshBillingStatus = useCallback(async () => {
+    if (!currentUser) {
+      setBillingStatus(null);
+      return;
+    }
+
+    try {
+      const status = await BillingService.getStatus();
+      setBillingStatus(status);
+    } catch {
+      setBillingStatus(null);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,9 +79,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!currentUser) {
+      return undefined;
+    }
+
+    void (async () => {
+      try {
+        const token = await registerDeviceForPush();
+        if (!cancelled) {
+          setPushToken(token);
+        }
+      } catch {
+        if (!cancelled) {
+          setPushToken(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
+
+  useEffect(() => {
+    void refreshBillingStatus();
+  }, [refreshBillingStatus]);
+
+  useEffect(() => {
+    if (currentUser || !pushToken) {
+      return undefined;
+    }
+
+    void unregisterDevicePushToken(pushToken).catch(() => undefined);
+    setPushToken(null);
+    return undefined;
+  }, [currentUser, pushToken]);
+
   const login = async (credentials: SignInCredentials) => {
     const user = await SessionService.signIn(credentials);
     setCurrentUser(user);
+    if (!user) {
+      setBillingStatus(null);
+    }
     return user;
   };
 
@@ -68,16 +132,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (scope !== 'others') {
       setCurrentUser(null);
+      setBillingStatus(null);
     }
   };
 
   const value = useMemo(() => ({
     currentUser,
+    billingStatus,
     isLoading,
     setCurrentUser,
+    refreshBillingStatus,
     login,
     logout,
-  }), [currentUser, isLoading]);
+  }), [billingStatus, currentUser, isLoading, refreshBillingStatus]);
 
   return (
     <AuthContext.Provider value={value}>

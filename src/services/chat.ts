@@ -5,10 +5,14 @@ export type ConversationSummary = {
   peer_id: string;
   peer_first_name: string;
   peer_last_name: string;
+  peer_gender: string;
   peer_avatar_url?: string | null;
+  peer_is_online?: boolean;
   last_message?: string | null;
   last_message_at?: string | null;
   unread: boolean;
+  status: 'pending' | 'accepted' | 'blocked' | 'declined';
+  blocked?: boolean;
 };
 
 export type Connection = {
@@ -17,6 +21,7 @@ export type Connection = {
   addressee_id: string;
   status: 'pending' | 'accepted' | 'blocked' | 'declined';
   created_at?: string;
+  blocked?: boolean;
 };
 
 export type MessageRow = {
@@ -59,6 +64,13 @@ class ChatService {
 
   static async getMessages(conversationId: string) {
     return ApiService.get<MessageRow[]>(`/conversations/${conversationId}/messages`);
+  }
+
+  static async updateTyping(conversationId: string, isTyping: boolean) {
+    return ApiService.post<{ message: string }, { is_typing: boolean }>(
+      `/conversations/${conversationId}/typing`,
+      { is_typing: isTyping },
+    );
   }
 
   static async sendMessage(conversationId: string, content: string) {

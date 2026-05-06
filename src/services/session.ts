@@ -31,10 +31,10 @@ const listeners = new Set<Listener>();
 const mapUser = (
   user:
     | {
-        id: string;
-        email: string;
-        user_metadata?: Record<string, unknown>;
-      }
+      id: string;
+      email: string;
+      user_metadata?: Record<string, unknown>;
+    }
     | null
     | undefined,
 ): SessionUser | null => {

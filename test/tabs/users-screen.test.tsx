@@ -9,12 +9,17 @@ import { buildUserRoute } from '@/constants/routes';
 
 const mockShow = jest.fn();
 const mockGetUsers = jest.fn();
+const mockExpressInterest = jest.fn();
+const mockRemoveInterest = jest.fn();
 const mockTheme = {
   colors: {
     background: '#ffffff',
     card: '#f5f5f5',
     gray: '#808080',
     link: '#0a84ff',
+    primary: '#ff3366',
+    success: '#11aa55',
+    white: '#ffffff',
     text: '#111111',
   },
   sizes: {
@@ -28,6 +33,10 @@ const mockTheme = {
   },
   assets: {
     avatar1: 1,
+    avatarMale: 2,
+    avatarFemale: 3,
+    chat: 4,
+    star: 5,
   },
 };
 
@@ -38,12 +47,26 @@ jest.mock('@/hooks', () => ({
   useData: () => ({
     theme: mockTheme,
   }),
+  useAuth: () => ({
+    currentUser: {
+      id: 'me',
+    },
+    billingStatus: {
+      access_state: 'active',
+    },
+  }),
+  useRealtime: () => ({
+    lastEvent: null,
+    eventTick: 0,
+  }),
 }));
 
 jest.mock('@/services/users', () => ({
   __esModule: true,
   default: {
     getUsers: (...args: unknown[]) => mockGetUsers(...args),
+    expressInterest: (...args: unknown[]) => mockExpressInterest(...args),
+    removeInterest: (...args: unknown[]) => mockRemoveInterest(...args),
   },
 }));
 
@@ -82,6 +105,8 @@ jest.mock('@/components', () => {
     Text: ({ children, ...props }: MockComponentProps) => React.createElement('MockText', props, children),
     Input: (props: Record<string, unknown>) => React.createElement('MockInput', props),
     Image: (props: Record<string, unknown>) => React.createElement('MockImage', props),
+    NotificationBellButton: (props: Record<string, unknown>) =>
+      React.createElement('MockNotificationBellButton', props),
   };
 });
 
@@ -107,15 +132,19 @@ describe('Users screen', () => {
         employment_type: 'Private',
         education: 'BSc',
         department: 'Engineering',
+        is_online: true,
+        interested: false,
       },
     ]);
+    mockExpressInterest.mockResolvedValue({ interested: true });
+    mockRemoveInterest.mockResolvedValue({ interested: false });
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('loads profile cards, expands details, and navigates to a profile', async () => {
+  it('loads profile rows and navigates to a profile', async () => {
     let renderer: TestRenderer.ReactTestRenderer | null = null;
 
     await act(async () => {
@@ -131,24 +160,16 @@ describe('Users screen', () => {
       q: '',
     });
 
-    const moreToggle = renderer!.root.findAll(
-      (node) => String(node.type) === 'MockText' && node.children.join('') === 'more...',
-    )[0];
+    const texts = renderer!.root.findAll((node) => String(node.type) === 'MockText').map((node) => node.children.join(' '));
+    expect(texts.join(' | ')).toContain('Single');
+    expect(texts.join(' | ')).toContain('Regularly');
+
+    const pressable = renderer!.root.findAll((node) => String(node.type) === 'MockTouchableOpacity')
+      .find((node) => node.props.style?.flex === 1);
+    expect(pressable).toBeDefined();
 
     act(() => {
-      moreToggle?.props.onPress();
-    });
-
-    expect(
-      renderer!.root.findAll(
-        (node) => String(node.type) === 'MockText' && node.children.join('').includes('Education:'),
-      ).length,
-    ).toBeGreaterThan(0);
-
-    const pressable = renderer!.root.find((node) => String(node.type) === 'MockTouchableOpacity');
-
-    act(() => {
-      pressable.props.onPress();
+      pressable!.props.onPress();
     });
 
     expect(router.push).toHaveBeenCalledWith(buildUserRoute('user-2'));
@@ -269,6 +290,8 @@ describe('Users screen', () => {
           employment_type: 'Private',
           education: 'BSc',
           department: 'Engineering',
+          is_online: false,
+          interested: false,
         },
       ]);
       await Promise.resolve();
@@ -294,6 +317,8 @@ describe('Users screen', () => {
           employment_type: 'Private',
           education: 'BSc',
           department: 'Engineering',
+          is_online: false,
+          interested: false,
         },
       ]);
       await Promise.resolve();

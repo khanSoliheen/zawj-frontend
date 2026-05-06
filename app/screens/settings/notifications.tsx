@@ -5,7 +5,7 @@ import { Block, Button, Text, Image, Switch } from "@/components";
 import { useData, useToast } from "@/hooks";
 import SettingsService, { type NotificationPrefs as Prefs } from "@/services/settings";
 
-const DEFAULTS: Prefs = { push: true, messages: true, marketing: false, sounds: false };
+const DEFAULTS: Prefs = { push: true, messages: true, matches: true, marketing: false, sounds: false };
 
 export default function NotificationSettings() {
   const { theme } = useData();
@@ -23,6 +23,7 @@ export default function NotificationSettings() {
         setPrefs({
           push: response?.push ?? DEFAULTS.push,
           messages: response?.messages ?? DEFAULTS.messages,
+          matches: response?.matches ?? DEFAULTS.matches,
           marketing: response?.marketing ?? DEFAULTS.marketing,
           sounds: response?.sounds ?? DEFAULTS.sounds,
         });
@@ -112,14 +113,20 @@ export default function NotificationSettings() {
           onChange={toggle("messages")}
         />
         <Row
+          label="New matches"
+          help="Alerts when a connection request is accepted and you become a match"
+          value={prefs.matches}
+          onChange={toggle("matches")}
+        />
+        <Row
           label="Marketing"
-          help="Offers, tips, and feature announcements"
+          help="Product updates, campaigns, and non-essential announcements"
           value={prefs.marketing}
           onChange={toggle("marketing")}
         />
         <Row
           label="In-app sounds"
-          help="Play sounds for toasts & events"
+          help="Play sound cues for in-app alerts and actions"
           value={prefs.sounds}
           onChange={toggle("sounds")}
         />

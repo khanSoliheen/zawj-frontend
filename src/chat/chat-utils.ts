@@ -39,6 +39,7 @@ export type ChatListItem = {
   time: string;
   avatar: ImageSourcePropType;
   unread?: boolean;
+  status?: 'pending' | 'accepted' | 'blocked' | 'declined';
 };
 
 export type ConversationRecord = {

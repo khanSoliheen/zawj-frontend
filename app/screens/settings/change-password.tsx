@@ -5,12 +5,15 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Block, Button, Text, Input, Image } from "@/components";
+import { ROUTES } from "@/constants/routes";
 import { useData, useToast } from "@/hooks";
 import AuthService from "@/services/auth";
+import SessionService from "@/services/session";
 
 // Zod schema (min 8 chars + confirm match)
 const schema = z
   .object({
+    currentPassword: z.string().min(8, "Current password must be at least 8 characters"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirm: z.string().min(8, "Confirm password must be at least 8 characters"),
   })
@@ -34,19 +37,20 @@ export default function ChangePassword() {
     resolver: zodResolver(schema),
     mode: "onBlur",
     reValidateMode: "onChange",
-    defaultValues: { password: "", confirm: "" },
+    defaultValues: { currentPassword: "", password: "", confirm: "" },
   });
 
-  const onSubmit = async ({ password }: FormValues) => {
+  const onSubmit = async ({ currentPassword, password }: FormValues) => {
     try {
-      await AuthService.changePassword(password);
+      await AuthService.changePassword(currentPassword, password);
+      await SessionService.signOut('local');
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update password";
       show("error", message);
       return;
     }
-    show("success", "Password updated");
-    router.back();
+    show("success", "Password updated. Please sign in again.");
+    router.replace(ROUTES.LOGIN);
   };
 
   return (
@@ -72,6 +76,26 @@ export default function ChangePassword() {
         <Text p marginBottom={sizes.s}>
           Set a new password for your account.
         </Text>
+        <Block flex={0} style={{ zIndex: 0 }}>
+          <Controller
+            control={control}
+            name="currentPassword"
+            render={({ field: { onChange, onBlur, value, ref } }) => (
+              <Input
+                placeholder="Current password"
+                secureTextEntry
+                marginBottom={sizes.md}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                ref={ref}
+                autoCapitalize="none"
+                error={errors.currentPassword?.message}
+                success={dirtyFields.currentPassword && !errors.currentPassword}
+              />
+            )}
+          />
+        </Block>
         {/* New Password */}
         <Block flex={0} style={{ zIndex: 0 }} >
           <Controller

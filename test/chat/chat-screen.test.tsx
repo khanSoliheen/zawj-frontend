@@ -4,6 +4,9 @@ import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
 
+import ChatScreen from '@/(tabs)/chat/[id]';
+import { ROUTES } from '@/constants/routes';
+
 const mockGetConnection = jest.fn();
 const mockGetMessages = jest.fn();
 const mockAcceptConnection = jest.fn();
@@ -11,25 +14,39 @@ const mockDeclineConnection = jest.fn();
 const mockEnsureConnection = jest.fn();
 const mockEnsureConversation = jest.fn();
 const mockSendMessage = jest.fn();
+const mockUpdateTyping = jest.fn();
 const mockGetUser = jest.fn();
+const mockGetBlockStatus = jest.fn();
 const mockShow = jest.fn();
+const mockUseRealtime = jest.fn((): {
+  lastEvent: any;
+  eventTick: number;
+} => ({
+  lastEvent: null,
+  eventTick: 0,
+}));
 const mockTheme = {
   colors: {
     background: '#ffffff',
     white: '#ffffff',
     gray: '#808080',
     text: '#111111',
+    card: '#f5f5f5',
+    success: '#11aa55',
   },
   sizes: {
     s: 8,
     m: 16,
     md: 20,
+    cardRadius: 16,
   },
   assets: {
     arrow: 1,
     more: 2,
     avatar1: 3,
     avatar2: 4,
+    avatarMale: 5,
+    avatarFemale: 6,
   },
   gradients: {
     dark: ['#111111', '#222222'],
@@ -37,7 +54,7 @@ const mockTheme = {
 };
 
 jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: () => {},
+  useFocusEffect: () => { },
 }));
 
 jest.mock('@/hooks', () => ({
@@ -52,6 +69,7 @@ jest.mock('@/hooks', () => ({
       id: 'me',
     },
   }),
+  useRealtime: () => mockUseRealtime(),
 }));
 
 jest.mock('react-native', () => {
@@ -63,10 +81,10 @@ jest.mock('react-native', () => {
       const renderItem = props.renderItem as any;
       const renderedItems = typeof renderItem === 'function'
         ? items.map((item, index) => React.createElement(
-            React.Fragment,
-            { key: String((item as { id?: string; header?: string }).id ?? (item as { header?: string }).header ?? index) },
-            renderItem({ item, index }),
-          ))
+          React.Fragment,
+          { key: String((item as { id?: string; header?: string }).id ?? (item as { header?: string }).header ?? index) },
+          renderItem({ item, index }),
+        ))
         : null;
 
       return React.createElement('MockFlatList', props, renderedItems ?? props.children);
@@ -86,6 +104,7 @@ jest.mock('@/services/chat', () => ({
     ensureConnection: (...args: unknown[]) => mockEnsureConnection(...args),
     ensureConversation: (...args: unknown[]) => mockEnsureConversation(...args),
     sendMessage: (...args: unknown[]) => mockSendMessage(...args),
+    updateTyping: (...args: unknown[]) => mockUpdateTyping(...args),
   },
 }));
 
@@ -93,6 +112,13 @@ jest.mock('@/services/users', () => ({
   __esModule: true,
   default: {
     getUser: (...args: unknown[]) => mockGetUser(...args),
+  },
+}));
+
+jest.mock('@/services/settings', () => ({
+  __esModule: true,
+  default: {
+    getBlockStatus: (...args: unknown[]) => mockGetBlockStatus(...args),
   },
 }));
 
@@ -113,8 +139,6 @@ jest.mock('@/components', () => {
     TimeStamp: (props: Record<string, unknown>) => React.createElement('MockTimeStamp', props),
   };
 });
-
-import ChatScreen from '@/(tabs)/chat/[id]';
 
 const mockUseLocalSearchParams = useLocalSearchParams as unknown as jest.Mock;
 
@@ -138,6 +162,7 @@ describe('Chat screen', () => {
       requester_id: 'peer-1',
       addressee_id: 'me',
       status: 'pending',
+      blocked: false,
     });
     mockGetMessages.mockResolvedValue([]);
     mockAcceptConnection.mockResolvedValue({ message: 'request accepted' });
@@ -147,6 +172,7 @@ describe('Chat screen', () => {
       requester_id: 'me',
       addressee_id: 'peer-1',
       status: 'accepted',
+      blocked: false,
     });
     mockEnsureConversation.mockResolvedValue({
       id: 'conversation-created',
@@ -159,6 +185,14 @@ describe('Chat screen', () => {
     });
     mockGetUser.mockResolvedValue({
       avatar_url: 'https://cdn.example.com/fallback-fatima.jpg',
+      gender: 'Female',
+      is_online: false,
+    });
+    mockGetBlockStatus.mockResolvedValue({ blocked: false });
+    mockUpdateTyping.mockResolvedValue({ message: 'typing updated' });
+    mockUseRealtime.mockReturnValue({
+      lastEvent: null,
+      eventTick: 0,
     });
     mockUseLocalSearchParams.mockReturnValue({
       id: '11111111-1111-4111-8111-111111111111',
@@ -177,7 +211,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -192,7 +226,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -203,7 +237,7 @@ describe('Chat screen', () => {
     expect(mockAcceptConnection).toHaveBeenCalledWith('connection-1');
     expect(mockGetConnection).toHaveBeenCalledTimes(2);
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
-    expect(mockShow).toHaveBeenCalledWith('success', 'Request accepted');
+    expect(mockShow).not.toHaveBeenCalledWith('success', 'Request accepted');
 
     unmountRenderer(renderer);
   });
@@ -213,7 +247,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const acceptSheet = renderer!.root.find((node) => String(node.type) === 'MockAcceptMessage');
 
@@ -224,7 +258,7 @@ describe('Chat screen', () => {
     expect(mockDeclineConnection).toHaveBeenCalledWith('connection-1');
     expect(mockGetConnection).toHaveBeenCalledTimes(2);
     expect(mockGetMessages).toHaveBeenCalledTimes(2);
-    expect(mockShow).toHaveBeenCalledWith('info', 'Request declined');
+    expect(mockShow).not.toHaveBeenCalledWith('info', 'Request declined');
 
     unmountRenderer(renderer);
   });
@@ -234,7 +268,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const images = renderer!.root.findAll((node) => String(node.type) === 'MockImage');
     expect(images.some((node) => node.props.source?.uri === 'https://cdn.example.com/fatima.jpg')).toBe(true);
@@ -254,12 +288,59 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(mockGetUser).toHaveBeenCalledWith('peer-1');
 
     const images = renderer!.root.findAll((node) => String(node.type) === 'MockImage');
     expect(images.some((node) => node.props.source?.uri === 'https://cdn.example.com/fallback-fatima.jpg')).toBe(true);
+
+    unmountRenderer(renderer);
+  });
+
+  it('shows a blocked-state banner and hides the composer when the current user blocked the peer', async () => {
+    mockGetBlockStatus.mockResolvedValue({ blocked: true });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const textContent = renderer!.root
+      .findAll((node) => String(node.type) === 'MockText')
+      .map((node) => node.children.join(' '));
+
+    expect(textContent).toContain('You blocked this user.');
+    expect(textContent).toContain('Previous messages stay visible, but you can’t send new ones.');
+    expect(renderer!.root.findAll((node) => String(node.type) === 'MockInput')).toHaveLength(0);
+
+    unmountRenderer(renderer);
+  });
+
+  it('shows a blocked-state banner when the peer blocked the current user', async () => {
+    mockGetBlockStatus.mockResolvedValue({ blocked: false });
+    mockGetConnection.mockResolvedValue({
+      id: 'connection-1',
+      requester_id: 'peer-1',
+      addressee_id: 'me',
+      status: 'accepted',
+      blocked: true,
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const textContent = renderer!.root
+      .findAll((node) => String(node.type) === 'MockText')
+      .map((node) => node.children.join(' '));
+
+    expect(textContent).toContain('This user blocked you.');
+    expect(textContent).toContain('Previous messages stay visible, but you can’t send new ones.');
+    expect(renderer!.root.findAll((node) => String(node.type) === 'MockInput')).toHaveLength(0);
 
     unmountRenderer(renderer);
   });
@@ -277,7 +358,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const input = renderer!.root.find((node) => String(node.type) === 'MockInput');
     act(() => {
@@ -293,6 +374,68 @@ describe('Chat screen', () => {
 
     expect(mockEnsureConversation).toHaveBeenCalledWith('peer-1');
     expect(mockSendMessage).toHaveBeenCalledWith('conversation-created', 'Assalamu alaikum');
+
+    unmountRenderer(renderer);
+  });
+
+  it('shows animated typing dots when the peer typing event arrives', async () => {
+    mockUseRealtime.mockReturnValue({
+      lastEvent: {
+        type: 'typing_updated',
+        conversation_id: '11111111-1111-4111-8111-111111111111',
+        user_id: 'peer-1',
+        is_typing: true,
+      },
+      eventTick: 1,
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const dots = renderer!.root.findAll(
+      (node) => String(node.type) === 'MockBlock' && node.props.testID === 'typing-dot',
+    );
+
+    expect(dots).toHaveLength(3);
+
+    unmountRenderer(renderer);
+  });
+
+  it('routes to billing when premium is required for a new message request', async () => {
+    mockGetConnection.mockResolvedValue(null);
+    mockEnsureConnection.mockRejectedValue(new Error('premium is required to send new message requests'));
+    mockUseLocalSearchParams.mockReturnValue({
+      id: 'new',
+      name: 'Fatima',
+      peerId: 'peer-1',
+      peerAvatarUrl: '',
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const input = renderer!.root.find((node) => String(node.type) === 'MockInput');
+    act(() => {
+      input.props.onChangeText('Assalamu alaikum');
+    });
+
+    const buttons = renderer!.root.findAll((node) => String(node.type) === 'MockButton');
+    const sendButton = buttons[buttons.length - 1];
+
+    await act(async () => {
+      await sendButton.props.onPress();
+    });
+
+    expect(mockShow).toHaveBeenCalledWith('info', 'Premium is required to send a new message request.');
+    expect((require('expo-router').router as { push: jest.Mock }).push).toHaveBeenCalledWith(ROUTES.SETTINGS_BILLING);
+    expect(mockEnsureConversation).not.toHaveBeenCalled();
+    expect(mockSendMessage).not.toHaveBeenCalled();
 
     unmountRenderer(renderer);
   });
@@ -325,7 +468,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     const initialTimeStamps = renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp');
     expect(initialTimeStamps).toHaveLength(1);
@@ -345,10 +488,63 @@ describe('Chat screen', () => {
     const seenTimeStamps = timeStamps.filter((node) => node.props.seen === true);
     const detailTimeStamps = timeStamps.filter((node) => node.props.seen !== true);
     expect(seenTimeStamps).toHaveLength(1);
-    expect(detailTimeStamps).toHaveLength(1);
+    expect(detailTimeStamps).toHaveLength(2);
     expect(seenTimeStamps[0].props.seenAvatar?.uri).toBe('https://cdn.example.com/fatima.jpg');
-    expect(seenTimeStamps[0].props.avatarOnly).toBe(false);
-    expect(seenTimeStamps[0].props.label).toBe('Seen 3m ago');
+    expect(seenTimeStamps[0].props.avatarOnly).toBe(true);
+    expect(detailTimeStamps.map((node) => node.props.label)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('Jan 10, 2026'),
+        'Seen 3m ago',
+      ]),
+    );
+
+    unmountRenderer(renderer);
+  });
+
+  it('keeps the seen avatar visible when another message is selected', async () => {
+    mockGetConnection.mockResolvedValue({
+      id: 'connection-1',
+      requester_id: 'me',
+      addressee_id: 'peer-1',
+      status: 'accepted',
+    });
+    mockGetMessages.mockResolvedValue([
+      {
+        id: 'message-1',
+        sender_id: 'me',
+        content: 'Assalamu alaikum',
+        created_at: '2026-01-10T10:00:00.000Z',
+        read_at: '2026-01-10T10:01:00.000Z',
+      },
+      {
+        id: 'message-2',
+        sender_id: 'me',
+        content: 'Checking in',
+        created_at: '2026-01-10T10:02:00.000Z',
+        read_at: '2026-01-10T10:03:00.000Z',
+      },
+    ]);
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+    await act(async () => {
+      renderer = TestRenderer.create(<ChatScreen />);
+    });
+    await act(async () => { });
+
+    const touchables = renderer!.root.findAll((node) => String(node.type) === 'MockTouchableOpacity');
+
+    act(() => {
+      touchables[0].props.onPress();
+    });
+
+    const timeStamps = renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp');
+    const seenTimeStamps = timeStamps.filter((node) => node.props.seen === true);
+    const detailTimeStamps = timeStamps.filter((node) => node.props.seen !== true);
+
+    expect(seenTimeStamps).toHaveLength(1);
+    expect(seenTimeStamps[0].props.avatarOnly).toBe(true);
+    expect(seenTimeStamps[0].props.seenAvatar?.uri).toBe('https://cdn.example.com/fatima.jpg');
+    expect(detailTimeStamps).toHaveLength(1);
     expect(detailTimeStamps[0].props.label).toContain('Jan 10, 2026');
 
     unmountRenderer(renderer);
@@ -382,7 +578,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp')).toHaveLength(0);
 
@@ -410,7 +606,7 @@ describe('Chat screen', () => {
     await act(async () => {
       renderer = TestRenderer.create(<ChatScreen />);
     });
-    await act(async () => {});
+    await act(async () => { });
 
     expect(renderer!.root.findAll((node) => String(node.type) === 'MockTimeStamp')).toHaveLength(0);
 

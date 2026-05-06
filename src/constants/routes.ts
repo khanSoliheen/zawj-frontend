@@ -24,10 +24,12 @@ export const ROUTES = {
   SETTINGS_TWO_FACTOR: '/screens/settings/twofa',
   SETTINGS_USER_BLOCK: '/screens/settings/user-block',
   SETTINGS_BLOCKED_USERS: '/screens/settings/blocked-users',
+  SETTINGS_BILLING: '/screens/settings/billing',
   SETTINGS_VERIFICATION: '/screens/settings/verification',
   SETTINGS_VISIBILITY: '/screens/settings/visibility',
   SETTINGS_PHOTO_REQUESTS: '/screens/settings/photo-requests',
   SETTINGS_DELETE_ACCOUNT: '/screens/settings/delete-account',
+  NOTIFICATIONS_CENTER: '/screens/notifications-center',
   SUPPORT: '/screens/support',
 } as const;
 

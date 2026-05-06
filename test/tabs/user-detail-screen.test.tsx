@@ -6,32 +6,46 @@ import { Alert } from 'react-native';
 import TestRenderer, { act } from 'react-test-renderer';
 
 import UserDetailScreen from '@/(tabs)/users/[id]';
-import { buildChatRoute } from '@/constants/routes';
+import { ROUTES, buildChatRoute } from '@/constants/routes';
 
 const mockShow = jest.fn();
 const mockGetUser = jest.fn();
 const mockRequestPhotoAccess = jest.fn();
+const mockUseAuth = jest.fn(() => ({
+  currentUser: {
+    id: 'current-user',
+  },
+  billingStatus: {
+    access_state: 'active',
+  },
+}));
 const mockTheme = {
   assets: {
-    background: 1,
-    arrow: 2,
-    more: 3,
-    avatar1: 4,
+    arrow: 1,
+    more: 2,
+    avatar1: 3,
+    avatarMale: 4,
+    avatarFemale: 5,
+    chat: 6,
+    star: 7,
   },
   colors: {
     background: '#ffffff',
-    white: '#ffffff',
     text: '#111111',
+    gray: '#808080',
+    primary: '#ff3366',
+    card: '#f5f5f5',
+    success: '#11aa55',
+    white: '#ffffff',
   },
   sizes: {
+    padding: 16,
     sm: 12,
     s: 8,
     l: 24,
+    m: 16,
     cardRadius: 16,
     xxl: 32,
-  },
-  gradients: {
-    secondary: ['#111111', '#333333'],
   },
 };
 
@@ -42,12 +56,23 @@ jest.mock('@/hooks', () => ({
   useData: () => ({
     theme: mockTheme,
   }),
-  useAuth: () => ({
-    currentUser: {
-      id: 'current-user',
-    },
+  useAuth: () => mockUseAuth(),
+  useRealtime: () => ({
+    lastEvent: null,
   }),
 }));
+
+jest.mock('react-native', () => {
+  const React = require('react');
+
+  return {
+    Alert: {
+      alert: jest.fn(),
+    },
+    TouchableOpacity: ({ children, ...props }: Record<string, unknown> & { children?: unknown }) =>
+      React.createElement('MockTouchableOpacity', props, children),
+  };
+});
 
 jest.mock('@/services/users', () => ({
   __esModule: true,
@@ -85,14 +110,22 @@ jest.mock('@/components', () => {
 
 const mockUseLocalSearchParams = useLocalSearchParams as unknown as jest.Mock;
 
-const findButtonByLabel = (root: TestRenderer.ReactTestInstance, label: string) =>
-  root.findAll((node) => String(node.type) === 'MockButton').find((buttonNode) =>
-    buttonNode.findAll((childNode) => String(childNode.type) === 'MockText' && childNode.children.join('') === label).length > 0,
+const findTouchableByText = (root: TestRenderer.ReactTestInstance, label: string) =>
+  root.findAll((node) => String(node.type) === 'MockTouchableOpacity').find((touchableNode) =>
+    touchableNode.findAll((childNode) => String(childNode.type) === 'MockText' && childNode.children.join('') === label).length > 0,
   );
 
 describe('User detail screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      currentUser: {
+        id: 'current-user',
+      },
+      billingStatus: {
+        access_state: 'active',
+      },
+    });
     mockUseLocalSearchParams.mockReturnValue({ id: 'user-2' });
     mockGetUser.mockResolvedValue({
       id: 'user-2',
@@ -109,6 +142,8 @@ describe('User detail screen', () => {
       quran_level: 'Intermediate',
       hijab_or_beard: 'Yes',
       photo_access_status: 'approved',
+      is_online: true,
+      interested: false,
     });
     mockRequestPhotoAccess.mockResolvedValue({ message: 'photo access requested' });
   });
@@ -122,7 +157,7 @@ describe('User detail screen', () => {
     await act(async () => {});
 
     await act(async () => {
-      await findButtonByLabel(renderer!.root, 'Send Message')?.props.onPress();
+      await findTouchableByText(renderer!.root, 'Message')?.props.onPress();
     });
 
     expect(router.push).toHaveBeenCalledWith({
@@ -133,6 +168,27 @@ describe('User detail screen', () => {
         peerAvatarUrl: 'https://cdn.example.com/amina.jpg',
       },
     });
+  });
+
+  it('routes free users to billing before opening a new chat request', async () => {
+    mockUseAuth.mockReturnValue({
+      currentUser: { id: 'current-user' },
+      billingStatus: { access_state: 'free' },
+    });
+
+    let renderer: TestRenderer.ReactTestRenderer | null = null;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<UserDetailScreen />);
+    });
+    await act(async () => {});
+
+    await act(async () => {
+      await findTouchableByText(renderer!.root, 'Message')?.props.onPress();
+    });
+
+    expect(mockShow).toHaveBeenCalledWith('info', 'Premium is required to send a new message request.');
+    expect(router.push).toHaveBeenCalledWith(ROUTES.SETTINGS_BILLING);
   });
 
   it('shows richer profile details instead of partial placeholders', async () => {
@@ -165,7 +221,7 @@ describe('User detail screen', () => {
     await act(async () => {});
 
     await act(async () => {
-      await findButtonByLabel(renderer!.root, 'Send Message')?.props.onPress();
+      await findTouchableByText(renderer!.root, 'Message')?.props.onPress();
     });
 
     expect(mockShow).not.toHaveBeenCalledWith('error', expect.any(String));
@@ -182,6 +238,7 @@ describe('User detail screen', () => {
       avatar_locked: true,
       photo_access_status: null,
       bio: 'About me',
+      interested: false,
     });
 
     let renderer: TestRenderer.ReactTestRenderer | null = null;
@@ -192,7 +249,7 @@ describe('User detail screen', () => {
     await act(async () => {});
 
     await act(async () => {
-      await findButtonByLabel(renderer!.root, 'Request Photo Access')?.props.onPress();
+      await findTouchableByText(renderer!.root, 'Request Photo Access')?.props.onPress();
     });
 
     expect(mockRequestPhotoAccess).toHaveBeenCalledWith('user-2');
