@@ -20,6 +20,57 @@ const EMPTY_PREFERENCES: MatchPreferences = {
   marital_status: null,
 };
 
+type SectionProps = {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  colors: any;
+  sizes: any;
+};
+
+const Section = ({
+  title,
+  description,
+  children,
+  colors,
+  sizes,
+}: SectionProps) => (
+  <Block
+    color={colors.card}
+    radius={sizes.cardRadius || 16}
+    padding={sizes.m}
+    marginBottom={sizes.m}
+    shadow
+  >
+    <Text h5 semibold marginBottom={sizes.xs}>
+      {title}
+    </Text>
+    {description ? (
+      <Text size={12} color={colors.gray} marginBottom={sizes.m}>
+        {description}
+      </Text>
+    ) : null}
+    {children}
+  </Block>
+);
+
+type FieldLabelProps = {
+  children: React.ReactNode;
+  colors: any;
+  sizes: any;
+};
+
+const FieldLabel = ({ children, colors, sizes }: FieldLabelProps) => (
+  <Text
+    size={12}
+    semibold
+    color={colors.input}
+    marginBottom={sizes.xs}
+  >
+    {children}
+  </Text>
+);
+
 const Preferences = () => {
   const { theme } = useData();
   const { show } = useToast();
@@ -38,45 +89,6 @@ const Preferences = () => {
   const [saving, setSaving] = useState(false);
 
   const sanitizeAgeInput = (value: string) => value.replace(/\D/g, "");
-
-  const Section = ({
-    title,
-    description,
-    children,
-  }: {
-    title: string;
-    description?: string;
-    children: React.ReactNode;
-  }) => (
-    <Block
-      color={colors.card}
-      radius={sizes.cardRadius || 16}
-      padding={sizes.m}
-      marginBottom={sizes.m}
-      shadow
-    >
-      <Text h5 semibold marginBottom={sizes.xs}>
-        {title}
-      </Text>
-      {description ? (
-        <Text size={12} color={colors.gray} marginBottom={sizes.m}>
-          {description}
-        </Text>
-      ) : null}
-      {children}
-    </Block>
-  );
-
-  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <Text
-      size={12}
-      semibold
-      color={colors.input}
-      marginBottom={sizes.xs}
-    >
-      {children}
-    </Text>
-  );
 
   useEffect(() => {
     (async () => {
@@ -173,10 +185,12 @@ const Preferences = () => {
         <Section
           title="Age Range"
           description="Choose the age range you want to see first in your feed."
+          colors={colors}
+          sizes={sizes}
         >
           <Block row justify="space-between">
             <Block flex={1} marginRight={sizes.s}>
-              <FieldLabel>Min Age</FieldLabel>
+              <FieldLabel colors={colors} sizes={sizes}>Min Age</FieldLabel>
               <Input
                 keyboardType="numeric"
                 value={minAge}
@@ -186,7 +200,7 @@ const Preferences = () => {
               />
             </Block>
             <Block flex={1} marginLeft={sizes.s}>
-              <FieldLabel>Max Age</FieldLabel>
+              <FieldLabel colors={colors} sizes={sizes}>Max Age</FieldLabel>
               <Input
                 keyboardType="numeric"
                 value={maxAge}
@@ -201,8 +215,10 @@ const Preferences = () => {
         <Section
           title="Location"
           description="Use location filters to prioritize nearby or preferred regions."
+          colors={colors}
+          sizes={sizes}
         >
-          <FieldLabel>Country</FieldLabel>
+          <FieldLabel colors={colors} sizes={sizes}>Country</FieldLabel>
           <Input
             placeholder="e.g. India"
             value={country}
@@ -211,7 +227,7 @@ const Preferences = () => {
           />
 
           <Block marginTop={sizes.m}>
-            <FieldLabel>State</FieldLabel>
+            <FieldLabel colors={colors} sizes={sizes}>State</FieldLabel>
             <Input
               placeholder="e.g. Telangana"
               value={state}
@@ -221,7 +237,7 @@ const Preferences = () => {
           </Block>
 
           <Block marginTop={sizes.m}>
-            <FieldLabel>City</FieldLabel>
+            <FieldLabel colors={colors} sizes={sizes}>City</FieldLabel>
             <Input
               placeholder="e.g. Hyderabad"
               value={city}
@@ -234,8 +250,10 @@ const Preferences = () => {
         <Section
           title="Lifestyle & Background"
           description="Set the profile qualities that matter most to you."
+          colors={colors}
+          sizes={sizes}
         >
-          <FieldLabel>Education</FieldLabel>
+          <FieldLabel colors={colors} sizes={sizes}>Education</FieldLabel>
           <Input
             placeholder="e.g. MSc, B.Tech, MBA"
             value={education}
@@ -244,7 +262,7 @@ const Preferences = () => {
           />
 
           <Block marginTop={sizes.m}>
-            <FieldLabel>Marital Status</FieldLabel>
+            <FieldLabel colors={colors} sizes={sizes}>Marital Status</FieldLabel>
             <SelectInput
               label=""
               options={MARITAL_OPTIONS}
@@ -255,7 +273,7 @@ const Preferences = () => {
           </Block>
 
           <Block marginTop={sizes.m}>
-            <FieldLabel>Prayer Regularity</FieldLabel>
+            <FieldLabel colors={colors} sizes={sizes}>Prayer Regularity</FieldLabel>
             <SelectInput
               label=""
               options={PRAYER_OPTIONS}
@@ -266,7 +284,7 @@ const Preferences = () => {
           </Block>
 
           <Block marginTop={sizes.m}>
-            <FieldLabel>Qur'an Level</FieldLabel>
+            <FieldLabel colors={colors} sizes={sizes}>Qur'an Level</FieldLabel>
             <Input
               placeholder="e.g. Intermediate"
               value={quranLevel}

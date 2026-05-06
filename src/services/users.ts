@@ -59,6 +59,7 @@ export type UserCard = {
   avatar_url?: string | null;
   is_online?: boolean;
   interested?: boolean;
+  match_score?: number;
 };
 
 class UserService {
