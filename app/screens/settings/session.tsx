@@ -135,10 +135,10 @@ export default function SessionsSettings() {
           shadow
           marginBottom={sizes.m}
         >
-        <Row label="Signed in as" value={info.userEmail} />
-        <Row label="Session created" value={info.createdAt} />
-        <Row label="Last active" value={info.lastSeenAt} />
-        <Row label="Session expires" value={info.expiresAt} />
+          <Row label="Signed in as" value={info.userEmail} />
+          <Row label="Session created" value={info.createdAt} />
+          <Row label="Last active" value={info.lastSeenAt} />
+          <Row label="Session expires" value={info.expiresAt} />
         </Block>
 
         <Block>
@@ -179,7 +179,7 @@ export default function SessionsSettings() {
                     flex={0}
                     onPress={() => void revokeSession(session.id)}
                     disabled={working !== null || revokingId !== null}
-                    outlined={colors.danger}
+                    outlined={colors.danger as string}
                   >
                     <Text p semibold color={colors.danger}>
                       {revokingId === session.id ? 'Removing…' : 'Delete'}
