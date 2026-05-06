@@ -64,17 +64,21 @@ const ProfileTabIcon = ({ focused }: { focused: boolean }) => {
 
 export default function TabsLayout() {
   const { theme } = useData();
+  const { currentUser } = useAuth();
   const { summary } = useRealtime();
   const { colors, assets } = theme;
 
   const hasUnreadChats = summary.unread_chat_count > 0 || summary.pending_message_request_count > 0;
+  const showTabs = !!currentUser?.id;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary as string,
         tabBarInactiveTintColor: colors.gray as string,
-        tabBarStyle: { backgroundColor: colors.card as string },
+        tabBarStyle: showTabs
+          ? { backgroundColor: colors.card as string }
+          : { display: 'none' },
       }}
     >
       {/* Home */}

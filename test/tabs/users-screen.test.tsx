@@ -48,6 +48,9 @@ jest.mock('@/hooks', () => ({
     theme: mockTheme,
   }),
   useAuth: () => ({
+    currentUser: {
+      id: 'me',
+    },
     billingStatus: {
       access_state: 'active',
     },

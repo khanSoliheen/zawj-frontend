@@ -34,7 +34,7 @@ const buildSecondaryLine = (user: Row) => {
 export default function Home() {
   const { theme } = useData();
   const { show } = useToast();
-  const { billingStatus } = useAuth();
+  const { currentUser, billingStatus } = useAuth();
   const { lastEvent, eventTick } = useRealtime();
   const { colors, sizes, assets } = theme;
 
@@ -55,6 +55,7 @@ export default function Home() {
   const loadingMoreRef = useRef(false);
 
   const PAGE = 20;
+  const isAuthenticated = !!currentUser?.id;
 
   const fetchPage = useCallback(async (reset = false, nextQuery = debouncedQuery) => {
     const normalizedQuery = nextQuery.trim();
@@ -168,7 +169,21 @@ export default function Home() {
     setRefreshing(false);
   };
 
+  const requireAuth = () => {
+    if (isAuthenticated) {
+      return true;
+    }
+
+    show('info', 'Please sign in to continue.');
+    router.push(ROUTES.LOGIN);
+    return false;
+  };
+
   const handleQuickMessage = (item: Row) => {
+    if (!requireAuth()) {
+      return;
+    }
+
     if (!billingStatus || !['active', 'grace'].includes(billingStatus.access_state)) {
       show('info', 'Premium is required to send a new message request.');
       router.push(ROUTES.SETTINGS_BILLING);
@@ -186,6 +201,10 @@ export default function Home() {
   };
 
   const handleToggleInterest = async (item: Row) => {
+    if (!requireAuth()) {
+      return;
+    }
+
     if (busyInterestId) {
       return;
     }
@@ -232,7 +251,13 @@ export default function Home() {
       >
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => router.push(buildUserRoute(item.id))}
+          onPress={() => {
+            if (!requireAuth()) {
+              return;
+            }
+
+            router.push(buildUserRoute(item.id));
+          }}
           style={{ flex: 1 }}
         >
           <Block row align="center">
@@ -289,49 +314,53 @@ export default function Home() {
         </TouchableOpacity>
 
         <Block flex={0} align="center" marginLeft={sizes.m}>
-          <TouchableOpacity
-            accessibilityLabel={`Message ${item.first_name}`}
-            activeOpacity={0.8}
-            onPress={() => handleQuickMessage(item)}
-            style={{ marginBottom: sizes.s }}
-          >
-            <Block
-              flex={0}
-              width={40}
-              height={40}
-              radius={20}
-              color={colors.card}
-              align="center"
-              justify="center"
-            >
-              <Image source={assets.chat} width={18} height={18} color={colors.text} radius={0} />
-            </Block>
-          </TouchableOpacity>
+          {isAuthenticated ? (
+            <>
+              <TouchableOpacity
+                accessibilityLabel={`Message ${item.first_name}`}
+                activeOpacity={0.8}
+                onPress={() => handleQuickMessage(item)}
+                style={{ marginBottom: sizes.s }}
+              >
+                <Block
+                  flex={0}
+                  width={40}
+                  height={40}
+                  radius={20}
+                  color={colors.card}
+                  align="center"
+                  justify="center"
+                >
+                  <Image source={assets.chat} width={18} height={18} color={colors.text} radius={0} />
+                </Block>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            accessibilityLabel={item.interested ? `Remove interest for ${item.first_name}` : `Express interest in ${item.first_name}`}
-            activeOpacity={0.8}
-            onPress={() => void handleToggleInterest(item)}
-            disabled={busyInterestId === item.id}
-          >
-            <Block
-              flex={0}
-              width={40}
-              height={40}
-              radius={20}
-              color={item.interested ? colors.primary : colors.card}
-              align="center"
-              justify="center"
-            >
-              <Image
-                source={assets.star}
-                width={18}
-                height={18}
-                color={item.interested ? colors.white : colors.text}
-                radius={0}
-              />
-            </Block>
-          </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel={item.interested ? `Remove interest for ${item.first_name}` : `Express interest in ${item.first_name}`}
+                activeOpacity={0.8}
+                onPress={() => void handleToggleInterest(item)}
+                disabled={busyInterestId === item.id}
+              >
+                <Block
+                  flex={0}
+                  width={40}
+                  height={40}
+                  radius={20}
+                  color={item.interested ? colors.primary : colors.card}
+                  align="center"
+                  justify="center"
+                >
+                  <Image
+                    source={assets.star}
+                    width={18}
+                    height={18}
+                    color={item.interested ? colors.white : colors.text}
+                    radius={0}
+                  />
+                </Block>
+              </TouchableOpacity>
+            </>
+          ) : null}
         </Block>
       </Block>
     );
@@ -349,7 +378,7 @@ export default function Home() {
             radius={0}
             color={colors.primary}
           />
-          <NotificationBellButton />
+          {isAuthenticated ? <NotificationBellButton /> : <Block width={40} />}
         </Block>
 
         <Input

@@ -201,33 +201,60 @@ export default function EditProfile() {
       </Block>
 
       {/* Avatar */}
-      <Block row align="center" marginBottom={sizes.m}>
-        <Button accessibilityLabel="Edit avatar" onPress={pickAvatar} disabled={uploading}>
-          <Image
-            radius={32}
-            width={64}
-            height={64}
-            source={
-              resolvedAvatarUrl && !avatarLoadFailed
-                ? { uri: resolvedAvatarUrl }
-                : getUserAvatarSource({ assets, gender: profileGender })
-            }
-            onError={() => setAvatarLoadFailed(true)}
-          />
+      <Block flex={0} align="center" marginBottom={sizes.m}>
+        <Button
+          accessibilityLabel="Edit avatar"
+          onPress={pickAvatar}
+          disabled={uploading}
+          style={{ padding: 0, alignSelf: 'center' }}
+        >
+          <Block
+            flex={0}
+            align="center"
+            justify="center"
+            radius={44}
+            width={88}
+            height={88}
+            color={colors.card}
+            style={{
+              borderWidth: 1,
+              borderColor: String(colors.card),
+              overflow: 'hidden',
+            }}
+          >
+            <Image
+              radius={44}
+              width={88}
+              height={88}
+              source={
+                resolvedAvatarUrl && !avatarLoadFailed
+                  ? { uri: resolvedAvatarUrl }
+                  : getUserAvatarSource({ assets, gender: profileGender })
+              }
+              onError={() => setAvatarLoadFailed(true)}
+            />
+          </Block>
         </Button>
+
         {uploading ? (
-          <Text p semibold color={colors.link} marginLeft={sizes.s}>
+          <Text p semibold color={colors.link} marginTop={sizes.xs}>
             Uploading…
           </Text>
         ) : null}
+
+        {resolvedAvatarUrl ? (
+          <Button
+            accessibilityLabel="Remove avatar"
+            onPress={removeAvatar}
+            disabled={uploading}
+            style={{ paddingHorizontal: 0, paddingVertical: 0, marginTop: sizes.xs }}
+          >
+            <Text p semibold color={colors.link}>
+              Remove photo
+            </Text>
+          </Button>
+        ) : null}
       </Block>
-      {resolvedAvatarUrl ? (
-        <Button accessibilityLabel="Remove avatar" onPress={removeAvatar} disabled={uploading}>
-          <Text p semibold color={colors.link} marginBottom={sizes.m}>
-            Remove photo
-          </Text>
-        </Button>
-      ) : null}
 
       {/* Form */}
       <Field name="full_name" placeholder="Full name" />

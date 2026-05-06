@@ -90,7 +90,7 @@ export default function SessionsSettings() {
   const Row = ({ label, value }: { label: string; value?: string | null }) => (
     <Block paddingVertical={sizes.xs}>
       <Text size={12} color={colors.gray}>{label}</Text>
-      <Text p>{value || "—"}</Text>
+      <Text p semibold>{value || "—"}</Text>
     </Block>
   );
 
@@ -126,14 +126,22 @@ export default function SessionsSettings() {
         <Block width={40} />
       </Block>
 
-      {/* Current session info */}
-      <Block paddingHorizontal={sizes.md}>
+      <Block scroll showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: sizes.xl }}>
+        {/* Current session info */}
+        <Block
+          color={colors.card}
+          radius={sizes.cardRadius || 16}
+          padding={sizes.m}
+          shadow
+          marginBottom={sizes.m}
+        >
         <Row label="Signed in as" value={info.userEmail} />
         <Row label="Session created" value={info.createdAt} />
         <Row label="Last active" value={info.lastSeenAt} />
         <Row label="Session expires" value={info.expiresAt} />
+        </Block>
 
-        <Block marginTop={sizes.m}>
+        <Block>
           <Text h6 semibold>Active devices</Text>
           <Text size={12} color={colors.gray} marginTop={sizes.xs} marginBottom={sizes.s}>
             Review where your account is signed in and remove sessions you no longer trust.
@@ -143,19 +151,35 @@ export default function SessionsSettings() {
             <Block
               key={session.id}
               color={colors.card}
-              radius={sizes.md}
+              radius={sizes.cardRadius || 16}
               padding={sizes.m}
               marginBottom={sizes.s}
               shadow
             >
-              <Block row justify="space-between" align="center">
-                <Text p semibold>{session.title}</Text>
+              <Block row justify="space-between" align="flex-start">
+                <Block flex={1} marginRight={sizes.s}>
+                  <Text p semibold>{session.title}</Text>
+                  <Text size={12} color={colors.gray} marginTop={2}>
+                    Last active: {session.lastSeenAt}
+                  </Text>
+                </Block>
+
                 {session.isCurrent ? (
-                  <Text size={12} color={colors.primary} semibold>This device</Text>
+                  <Block
+                    flex={0}
+                    paddingHorizontal={sizes.s}
+                    paddingVertical={4}
+                    radius={12}
+                    color={colors.primary}
+                  >
+                    <Text size={11} color={colors.white} semibold>This device</Text>
+                  </Block>
                 ) : (
                   <Button
+                    flex={0}
                     onPress={() => void revokeSession(session.id)}
                     disabled={working !== null || revokingId !== null}
+                    outlined={colors.danger}
                   >
                     <Text p semibold color={colors.danger}>
                       {revokingId === session.id ? 'Removing…' : 'Delete'}
@@ -163,27 +187,26 @@ export default function SessionsSettings() {
                   </Button>
                 )}
               </Block>
-              <Text size={12} color={colors.gray} marginTop={sizes.xs}>
-                Last active: {session.lastSeenAt}
-              </Text>
-              <Text size={12} color={colors.gray} marginTop={2}>
-                Signed in: {session.createdAt}
-              </Text>
-              <Text size={12} color={colors.gray} marginTop={2}>
-                Expires: {session.expiresAt}
-              </Text>
+              <Block row wrap="wrap" marginTop={sizes.s}>
+                <Text size={12} color={colors.gray} marginRight={sizes.s}>
+                  Signed in: {session.createdAt}
+                </Text>
+                <Text size={12} color={colors.gray}>
+                  Expires: {session.expiresAt}
+                </Text>
+              </Block>
             </Block>
           ))}
         </Block>
 
         <Block marginTop={sizes.m}>
-          <Button onPress={signOutOthers} disabled={working !== null}>
+          <Button onPress={signOutOthers} disabled={working !== null} marginBottom={sizes.s}>
             <Text p semibold color={colors.link}>
               {working === "others" ? "Signing out…" : "Sign out of other devices"}
             </Text>
           </Button>
 
-          <Button onPress={signOutAll} disabled={working !== null} marginTop={sizes.s}>
+          <Button onPress={signOutAll} disabled={working !== null}>
             <Text p semibold color={colors.danger}>
               {working === "all" ? "Signing out…" : "Sign out of all devices"}
             </Text>
