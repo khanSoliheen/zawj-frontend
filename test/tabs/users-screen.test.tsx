@@ -134,6 +134,7 @@ describe('Users screen', () => {
         department: 'Engineering',
         is_online: true,
         interested: false,
+        match_score: 87,
       },
     ]);
     mockExpressInterest.mockResolvedValue({ interested: true });
@@ -163,6 +164,7 @@ describe('Users screen', () => {
     const texts = renderer!.root.findAll((node) => String(node.type) === 'MockText').map((node) => node.children.join(' '));
     expect(texts.join(' | ')).toContain('Single');
     expect(texts.join(' | ')).toContain('Regularly');
+    expect(texts.join(' | ')).toContain('Match 87%');
 
     const pressable = renderer!.root.findAll((node) => String(node.type) === 'MockTouchableOpacity')
       .find((node) => node.props.style?.flex === 1);

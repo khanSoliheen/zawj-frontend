@@ -230,6 +230,10 @@ export default function Home() {
   const renderItem = ({ item }: { item: Row }) => {
     const age = item.dob ? Utils.getAge(item.dob) : undefined;
     const nameLine = [formatName(item), age ? `${age}` : null].filter(Boolean).join(', ');
+    console.log(item.match_score);
+    const matchLabel = typeof item.match_score === 'number'
+      ? `Match ${Math.max(0, Math.min(100, Math.round(item.match_score)))}%`
+      : null;
     const detailLine = buildSecondaryLine(item);
     const facts = [
       { label: FACT_LABELS.marital_status, value: item.marital_status },
@@ -290,6 +294,11 @@ export default function Home() {
 
             <Block flex={1}>
               <Text h6 semibold>{nameLine}</Text>
+              {matchLabel ? (
+                <Text size={11} color={colors.primary} marginTop={2} semibold>
+                  {matchLabel}
+                </Text>
+              ) : null}
               {detailLine ? (
                 <Text size={12} color={colors.gray} marginTop={2}>
                   {detailLine}
